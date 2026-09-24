@@ -1,0 +1,9 @@
+Tambahkan bagian berikut ke pubspec.yaml project Halo Mina:
+
+flutter:
+  assets:
+    - assets/images/logo_kemenimipas.png
+    - assets/images/logo_pemasyarakatan.png
+    - assets/images/logo_upt.png
+
+Jangan membuat blok `flutter:` kedua jika sudah ada. Cukup tambahkan `assets:` di dalam blok flutter yang sudah ada.
