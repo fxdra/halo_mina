@@ -1,4 +1,4 @@
-# Halo Mina
+# Halo Minna
 
 A new Flutter project.
 
