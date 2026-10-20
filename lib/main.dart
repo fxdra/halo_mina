@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'services/halo_minna_api.dart';
+
 void main() => runApp(const HaloMinnaApp());
 
 class HaloMinnaApp extends StatelessWidget {
@@ -69,10 +71,11 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(milliseconds: 1300), () {
-      if (mounted)
+      if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const AccessScreen()),
         );
+      }
     });
   }
 
@@ -150,15 +153,38 @@ class _AccessScreenState extends State<AccessScreen> {
 
   Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
+
     FocusScope.of(context).unfocus();
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    setState(() => _loading = false);
-    // UI demo: validasi kode akses akan dihubungkan ke API pada tahap berikutnya.
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const DashboardScreen()),
-    );
+
+    try {
+      // Prefix BNCY- sudah ditampilkan terpisah di UI.
+      final kodeAkses = 'BNCY-${_controller.text.trim()}';
+
+      await HaloMinnaApi.login(kodeAkses);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      final message = e.toString().replaceFirst('Exception: ', '');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   @override
@@ -170,7 +196,7 @@ class _AccessScreenState extends State<AccessScreen> {
             'assets/images/logo_pemasyarakatan.png',
             width: 32,
             height: 32,
-            errorBuilder: (_, __, ___) =>
+            errorBuilder: (_, _, _) =>
                 const Icon(Icons.account_balance_outlined),
           ),
           const SizedBox(width: 10),
@@ -253,35 +279,64 @@ class _AccessScreenState extends State<AccessScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _controller,
-                      textCapitalization: TextCapitalization.characters,
-                      autocorrect: false,
-                      maxLength: 20,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _continue(),
-                      obscureText: !_showCode,
-                      validator: (v) => v == null || v.trim().isEmpty
-                          ? 'Kode akses wajib diisi.'
-                          : null,
-                      decoration: InputDecoration(
-                        labelText: 'Kode Akses',
-                        hintText: 'Contoh: BNCY-XXXXXXXX',
-                        prefixIcon: const Icon(Icons.key_rounded),
-                        counterText: '',
-                        suffixIcon: IconButton(
-                          tooltip: _showCode
-                              ? 'Sembunyikan kode'
-                              : 'Tampilkan kode',
-                          onPressed: () =>
-                              setState(() => _showCode = !_showCode),
-                          icon: Icon(
-                            _showCode
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 56,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEAF1F8),
+                            border: Border.all(color: const Color(0xFFD5DFEA)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'BNCY-',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: HaloMinnaApp.navy,
+                              fontSize: 15,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _controller,
+                            textCapitalization: TextCapitalization.characters,
+                            autocorrect: false,
+                            maxLength: 8,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _continue(),
+                            obscureText: !_showCode,
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Kode akses wajib diisi.'
+                                : v.trim().length != 8
+                                ? 'Kode akses harus terdiri dari 8 karakter.'
+                                : null,
+                            decoration: InputDecoration(
+                              labelText: 'Kode Akses',
+                              hintText: 'XXXXXXXX',
+                              prefixIcon: const Icon(Icons.key_rounded),
+                              counterText: '',
+                              suffixIcon: IconButton(
+                                tooltip: _showCode
+                                    ? 'Sembunyikan kode'
+                                    : 'Tampilkan kode',
+                                onPressed: () =>
+                                    setState(() => _showCode = !_showCode),
+                                icon: Icon(
+                                  _showCode
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 14),
                     SizedBox(
@@ -371,13 +426,13 @@ class DashboardScreen extends StatelessWidget {
       Color(0xFFE7EFF8),
     ),
     MenuData(
-      'Program Integrasi',
+      'Program Pembinaan',
       'Informasi dan pembinaan',
       Icons.account_tree_outlined,
       Color(0xFFF8F0DF),
     ),
     MenuData(
-      'Daftar Program Integrasi',
+      'Daftar Program Pembinaan',
       'Kenali kegiatan pembinaan',
       Icons.menu_book_outlined,
       Color(0xFFE5F3EC),
@@ -390,13 +445,13 @@ class DashboardScreen extends StatelessWidget {
     ),
     MenuData(
       'Tentang Kami',
-      'Informasi layanan Halo Minna',
+      'Informasi layanan Lapas Banceuy Bandung',
       Icons.account_balance_outlined,
       Color(0xFFE4F1F5),
     ),
     MenuData(
-      'Kritik & Saran',
-      'Sampaikan masukan layanan',
+      'Tanya Minna',
+      'Ada pertanyaan? Hubungi Minna',
       Icons.forum_outlined,
       Color(0xFFF8E9E8),
     ),
@@ -404,7 +459,7 @@ class DashboardScreen extends StatelessWidget {
   void _open(BuildContext context, int index) {
     final pages = <Widget>[
       const StatusProgramScreen(),
-      const ProgramIntegrasiScreen(),
+      const ProgramPembinaanScreen(),
       const DaftarProgramScreen(),
       const StatistikScreen(),
       const TentangKamiScreen(),
@@ -451,7 +506,7 @@ class DashboardScreen extends StatelessWidget {
                         child: Image.asset(
                           'assets/images/logo_pemasyarakatan.png',
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, _, _) => const Icon(
                             Icons.account_balance,
                             color: HaloMinnaApp.navy,
                           ),
@@ -507,12 +562,12 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
                   const Text(
-                    'Selamat datang',
+                    'Selamat datang di',
                     style: TextStyle(color: Color(0xFFD2DFEC), fontSize: 13),
                   ),
                   const SizedBox(height: 5),
                   const Text(
-                    'Layanan Informasi\nProgram Integrasi',
+                    'Halo Minna',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 25,
@@ -522,7 +577,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Akses informasi program, tahapan, dan kegiatan pembinaan melalui Halo Minna.',
+                    'Pusat informasi bagi keluarga WBP untuk mengetahui tahapan program integrasi dan kegiatan pembinaan.',
                     style: TextStyle(
                       color: Color(0xFFE0EAF3),
                       fontSize: 13,
@@ -536,7 +591,7 @@ class DashboardScreen extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.10),
+                      color: Colors.black.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
@@ -719,105 +774,278 @@ class MenuCard extends StatelessWidget {
   );
 }
 
-class StatusProgramScreen extends StatelessWidget {
+class StatusProgramScreen extends StatefulWidget {
   const StatusProgramScreen({super.key});
-  static const steps = <TimelineData>[
-    TimelineData(
-      'Pengajuan / Usulan',
-      'Belum ada tanggal',
-      Icons.description_outlined,
-    ),
-    TimelineData(
-      'Pengambilan Berkas',
-      'Belum ada tanggal',
-      Icons.folder_open_outlined,
-    ),
-    TimelineData(
-      'Pengembalian Berkas',
-      'Belum ada tanggal',
-      Icons.assignment_turned_in_outlined,
-    ),
-    TimelineData('Permintaan Litmas', 'Belum ada tanggal', Icons.outgoing_mail),
-    TimelineData('Litmas Bapas', 'Belum ada tanggal', Icons.apartment_outlined),
-    TimelineData(
-      'Hasil Litmas',
-      'Belum ada tanggal',
-      Icons.fact_check_outlined,
-    ),
-    TimelineData('Sidang TPP', 'Belum ada tanggal', Icons.groups_outlined),
-    TimelineData(
-      'Verifikasi Ditjen',
-      'Belum ada tanggal',
-      Icons.verified_outlined,
-    ),
-    TimelineData(
-      'Persetujuan Menteri',
-      'Belum ada tanggal',
-      Icons.gavel_outlined,
-    ),
-    TimelineData('Otorisasi SK', 'Belum ada tanggal', Icons.approval_outlined),
-    TimelineData(
-      'Pelaksanaan',
-      'Belum ada tanggal',
-      Icons.event_available_outlined,
-    ),
-    TimelineData('Pembebasan', 'Belum ada tanggal', Icons.flag_outlined),
-  ];
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Status Program')),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-      children: [
-        const SectionIntro(
-          eyebrow: 'STATUS WBP',
-          title: 'Ringkasan Program',
-          subtitle: 'Informasi identitas dan tahapan program integrasi.',
-        ),
-        const SizedBox(height: 18),
-        const IdentityCard(),
-        const SizedBox(height: 14),
-        const ProgramStatusCard(),
-        const SizedBox(height: 25),
-        const Text(
-          'Tahapan Program',
-          style: TextStyle(
-            color: HaloMinnaApp.ink,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
+  State<StatusProgramScreen> createState() => _StatusProgramScreenState();
+}
+
+class _StatusProgramScreenState extends State<StatusProgramScreen> {
+  Map<String, dynamic>? _profil;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfil();
+  }
+
+  Future<void> _loadProfil() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final profil = await HaloMinnaApi.getProfil();
+
+      if (!mounted) return;
+
+      setState(() {
+        _profil = profil;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
+      });
+    }
+  }
+
+  String _nilai(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) {
+      return 'Belum tersedia';
+    }
+
+    return value.toString();
+  }
+
+  String _tanggal(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) {
+      return 'Belum ada tanggal';
+    }
+
+    final raw = value.toString().trim();
+
+    // Format YYYY-MM-DD menjadi DD-MM-YYYY.
+    final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(raw);
+
+    if (match != null) {
+      return '${match.group(3)}-${match.group(2)}-${match.group(1)}';
+    }
+
+    return raw;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Status Program')),
+        body: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 14),
+              Text('Memuat data status program...'),
+            ],
           ),
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Tanggal akan ditampilkan jika tersedia pada data resmi.',
-          style: TextStyle(
-            color: HaloMinnaApp.muted,
-            fontSize: 12.5,
-            height: 1.4,
+      );
+    }
+
+    if (_error != null || _profil == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Status Program')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 48,
+                  color: HaloMinnaApp.muted,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Data belum dapat dimuat',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: HaloMinnaApp.ink,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _error ?? 'Terjadi kesalahan saat mengambil data.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: HaloMinnaApp.muted),
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: _loadProfil,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Coba Lagi'),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 17),
-        ...List.generate(
-          steps.length,
-          (i) => TimelineRow(
-            data: steps[i],
-            isLast: i == steps.length - 1,
-            index: i,
+      );
+    }
+
+    final profil = _profil!;
+    final integrasi = profil['integrasi'] is Map
+        ? Map<String, dynamic>.from(profil['integrasi'] as Map)
+        : <String, dynamic>{};
+
+    final steps = <TimelineData>[
+      TimelineData(
+        'Pengambilan Berkas',
+        _tanggal(integrasi['tgl_pengambilan_berkas']),
+        Icons.folder_open_outlined,
+      ),
+      TimelineData(
+        'Pengembalian Berkas',
+        _tanggal(integrasi['tgl_pengembalian_berkas']),
+        Icons.assignment_turned_in_outlined,
+      ),
+      TimelineData(
+        'Permintaan Litmas',
+        _tanggal(integrasi['tgl_permintaan_litmas']),
+        Icons.outgoing_mail,
+      ),
+      TimelineData(
+        'Litmas Bapas',
+        _tanggal(integrasi['tgl_litmas_bapas']),
+        Icons.apartment_outlined,
+      ),
+      TimelineData(
+        'Hasil Litmas',
+        _tanggal(integrasi['tgl_hasil_litmas']),
+        Icons.fact_check_outlined,
+      ),
+      TimelineData(
+        'Sidang TPP',
+        _tanggal(integrasi['tgl_sidang_tpp']),
+        Icons.groups_outlined,
+      ),
+      TimelineData(
+        'Input SDP',
+        _tanggal(integrasi['tgl_input_sdp']),
+        Icons.edit_calendar_outlined,
+      ),
+      TimelineData(
+        'Verifikasi Ditjen',
+        _tanggal(integrasi['tgl_verifikasi_ditjen']),
+        Icons.verified_outlined,
+      ),
+      TimelineData(
+        'Persetujuan Menteri',
+        _tanggal(integrasi['tgl_persetujuan_menteri']),
+        Icons.gavel_outlined,
+      ),
+      TimelineData(
+        'Otorisasi SK',
+        _tanggal(integrasi['tgl_otorisasi_sk']),
+        Icons.approval_outlined,
+      ),
+      TimelineData(
+        'Pelaksanaan',
+        _tanggal(integrasi['tgl_pelaksanaan']),
+        Icons.event_available_outlined,
+      ),
+      TimelineData(
+        'Pembebasan',
+        _tanggal(integrasi['tgl_pembebasan']),
+        Icons.flag_outlined,
+      ),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Status Program'),
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang data',
+            onPressed: _loadProfil,
+            icon: const Icon(Icons.refresh),
           ),
-        ),
-        const SizedBox(height: 14),
-        const NoticeCard(
-          icon: Icons.info_outline_rounded,
-          title: 'Catatan',
-          message: 'Tahapan tanpa tanggal bukan berarti gagal. Status dan tanggal aktual mengikuti data yang tersedia dari sistem.',
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+        children: [
+          const SectionIntro(
+            eyebrow: 'STATUS WBP',
+            title: 'Ringkasan Program',
+            subtitle: 'Informasi identitas dan tahapan program integrasi.',
+          ),
+          const SizedBox(height: 18),
+          IdentityCard(
+            nama: _nilai(profil['nama']),
+            noReg: _nilai(profil['no_reg_instansi']),
+          ),
+          const SizedBox(height: 14),
+          ProgramStatusCard(
+            jenisUsulan: _nilai(integrasi['jenis_usulan']),
+            status: _nilai(integrasi['status_program']),
+            masa12: _tanggal(profil['masa_1_2']),
+            masa23: _tanggal(profil['masa_2_3']),
+          ),
+          const SizedBox(height: 25),
+          const Text(
+            'Tahapan Program',
+            style: TextStyle(
+              color: HaloMinnaApp.ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tanggal mengikuti data yang tersedia dari sistem.',
+            style: TextStyle(
+              color: HaloMinnaApp.muted,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 17),
+          ...List.generate(
+            steps.length,
+            (i) => TimelineRow(
+              data: steps[i],
+              isLast: i == steps.length - 1,
+              index: i,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const NoticeCard(
+            icon: Icons.info_outline_rounded,
+            title: 'Catatan',
+            message: 'Tahapan tanpa tanggal bukan berarti Program Integrasi gagal. Status dan tanggal aktual mengikuti data yang tersedia dari sistem.',
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class IdentityCard extends StatelessWidget {
-  const IdentityCard({super.key});
+  final String nama;
+  final String noReg;
+
+  const IdentityCard({super.key, required this.nama, required this.noReg});
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(17),
@@ -842,11 +1070,11 @@ class IdentityCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 13),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'NAMA WBP',
                 style: TextStyle(
                   color: HaloMinnaApp.muted,
@@ -855,19 +1083,19 @@ class IdentityCard extends StatelessWidget {
                   letterSpacing: .8,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'Contoh Nama WBP',
-                style: TextStyle(
+                nama,
+                style: const TextStyle(
                   color: HaloMinnaApp.ink,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               Text(
-                'No. Registrasi: —',
-                style: TextStyle(color: HaloMinnaApp.muted, fontSize: 12),
+                'No. Registrasi: $noReg',
+                style: const TextStyle(color: HaloMinnaApp.muted, fontSize: 12),
               ),
             ],
           ),
@@ -878,7 +1106,19 @@ class IdentityCard extends StatelessWidget {
 }
 
 class ProgramStatusCard extends StatelessWidget {
-  const ProgramStatusCard({super.key});
+  final String jenisUsulan;
+  final String status;
+  final String masa12;
+  final String masa23;
+
+  const ProgramStatusCard({
+    super.key,
+    required this.jenisUsulan,
+    required this.status,
+    required this.masa12,
+    required this.masa23,
+  });
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(19),
@@ -893,9 +1133,9 @@ class ProgramStatusCard extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Expanded(
+            const Expanded(
               child: Text(
                 'STATUS PROGRAM',
                 style: TextStyle(
@@ -906,38 +1146,38 @@ class ProgramStatusCard extends StatelessWidget {
                 ),
               ),
             ),
-            StatusPill(label: 'Contoh'),
+            StatusPill(label: status),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         const Text(
           'Jenis Usulan',
           style: TextStyle(color: Color(0xFFD7E3EF), fontSize: 12),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Pembebasan Bersyarat',
-          style: TextStyle(
+        Text(
+          jenisUsulan,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.w900,
           ),
         ),
         const SizedBox(height: 19),
-        const Row(
+        Row(
           children: [
             Expanded(
-              child: DateInfo(label: 'MULAI · 1/2 PIDANA', date: '—'),
+              child: DateInfo(label: '1/2 PIDANA', date: masa12),
             ),
-            SizedBox(width: 14),
+            const SizedBox(width: 14),
             Expanded(
-              child: DateInfo(label: 'BERAKHIR · 2/3 PIDANA', date: '—'),
+              child: DateInfo(label: '2/3 PIDANA', date: masa23),
             ),
           ],
         ),
         const SizedBox(height: 12),
         const Text(
-          'Tanggal contoh belum diisi; data resmi akan mengikuti sistem.',
+          'Informasi mengikuti data yang tersedia pada sistem.',
           style: TextStyle(
             color: Color(0xFFD7E3EF),
             fontSize: 10.5,
@@ -951,23 +1191,113 @@ class ProgramStatusCard extends StatelessWidget {
 
 class StatusPill extends StatelessWidget {
   final String label;
+
   const StatusPill({super.key, required this.label});
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFF0CE),
-      borderRadius: BorderRadius.circular(30),
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(
-        color: Color(0xFF815B12),
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final String status = label.toLowerCase().trim();
+
+    final Color backgroundColor;
+    final Color textColor;
+    final String description;
+
+    switch (status) {
+      case 'aktif':
+        backgroundColor = const Color(0xFFDDF5E5);
+        textColor = const Color(0xFF23834D);
+        description = 'Program integrasi sedang berjalan.';
+        break;
+
+      case 'batal':
+        backgroundColor = const Color(0xFFFFE0E0);
+        textColor = const Color(0xFFD64B4B);
+        description = 'Program integrasi telah dibatalkan. Tanya Minna untuk informasi lebih lanjut.';
+        break;
+
+      case 'tidak aktif':
+        backgroundColor = const Color(0xFFFFF0CE);
+        textColor = const Color(0xFF815B12);
+        description = 'WBP belum masuk tahap pengusulan program integrasi.';
+        break;
+
+      default:
+        backgroundColor = const Color(0xFFE8EDF3);
+        textColor = const Color(0xFF526174);
+        description = 'Informasi untuk status ini belum tersedia.';
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(30),
+        onTap: () {
+          showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text(
+                'Informasi Status Program',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: backgroundColor,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    description,
+                    style: const TextStyle(fontSize: 14, height: 1.5),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Mengerti'),
+                ),
+              ],
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class DateInfo extends StatelessWidget {
@@ -1008,15 +1338,63 @@ class TimelineRow extends StatelessWidget {
   final TimelineData data;
   final bool isLast;
   final int index;
+
   const TimelineRow({
     super.key,
     required this.data,
     required this.isLast,
     required this.index,
   });
+
+  DateTime? _parseDate(String value) {
+    final raw = value.trim();
+
+    if (raw.isEmpty ||
+        raw.toLowerCase() == 'belum ada tanggal' ||
+        raw.toLowerCase() == 'belum tersedia' ||
+        raw == '-') {
+      return null;
+    }
+
+    // Mendukung format DD-MM-YYYY dan YYYY-MM-DD.
+    final dmy = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$').firstMatch(raw);
+
+    if (dmy != null) {
+      return DateTime(
+        int.parse(dmy.group(3)!),
+        int.parse(dmy.group(2)!),
+        int.parse(dmy.group(1)!),
+      );
+    }
+
+    final ymd = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(raw);
+
+    if (ymd != null) {
+      return DateTime(
+        int.parse(ymd.group(1)!),
+        int.parse(ymd.group(2)!),
+        int.parse(ymd.group(3)!),
+      );
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final done = index == 0;
+    final tanggal = _parseDate(data.date);
+
+    // Tahap bertanggal dianggap selesai jika tanggalnya sudah lewat
+    // atau sama dengan hari ini. Tanggal mendatang belum selesai.
+    final now = DateTime.now();
+    final hariIni = DateTime(now.year, now.month, now.day);
+
+    final done = tanggal != null;
+
+    final Color warnaStatus = done
+        ? const Color(0xFF2D8A58)
+        : const Color(0xFF9AA8B7);
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1086,9 +1464,7 @@ class TimelineRow extends StatelessWidget {
                   Icon(
                     done ? Icons.check_circle_rounded : Icons.schedule_rounded,
                     size: 18,
-                    color: done
-                        ? const Color(0xFF2D8A58)
-                        : const Color(0xFF9AA8B7),
+                    color: warnaStatus,
                   ),
                 ],
               ),
@@ -1100,60 +1476,161 @@ class TimelineRow extends StatelessWidget {
   }
 }
 
-class ProgramIntegrasiScreen extends StatelessWidget {
-  const ProgramIntegrasiScreen({super.key});
+class ProgramPembinaanScreen extends StatelessWidget {
+  const ProgramPembinaanScreen({super.key});
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Program Integrasi')),
+    appBar: AppBar(title: const Text('Program Pembinaan')),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
       children: const [
         SectionIntro(
           eyebrow: 'PEMBINAAN',
-          title: 'Program Integrasi',
+          title: 'Program Pembinaan',
           subtitle: 'Ruang informasi kegiatan dan pembinaan yang mendukung proses integrasi.',
         ),
         SizedBox(height: 20),
+
         FeatureBanner(
           icon: Icons.diversity_3_outlined,
           title: 'Pembinaan dan pengembangan diri',
           body: 'Informasi program disajikan agar keluarga dapat mengenal kegiatan yang tersedia.',
         ),
         SizedBox(height: 22),
-        ProgramCard(
-          title: 'Santri',
-          category: 'Pembinaan kerohanian',
-          icon: Icons.menu_book_rounded,
-          description:
-              'Kegiatan pembinaan keagamaan dan penguatan nilai spiritual.',
+
+        // DROPDOWN PEMBINAAN KEPRIBADIAN
+        _ProgramDropdown(
+          title: 'Pembinaan Kepribadian',
+          subtitle: 'Pembentukan karakter, pendidikan, dan nilai spiritual.',
+          icon: Icons.psychology_outlined,
+          programs: [
+            ProgramCard(
+              title: 'Santri',
+              category: 'Pembinaan kerohanian',
+              icon: Icons.menu_book_rounded,
+              description:
+                  'Kegiatan pembinaan keagamaan dan penguatan nilai spiritual.',
+            ),
+            ProgramCard(
+              title: 'Pramuka',
+              category: 'Pembinaan karakter',
+              icon: Icons.explore_outlined,
+              description: 'Kegiatan untuk melatih kedisiplinan, kerja sama, dan tanggung jawab.',
+            ),
+            ProgramCard(
+              title: 'Sanggar Kegiatan Belajar (SKB)',
+              category: 'Pendidikan dan pembelajaran',
+              icon: Icons.school_outlined,
+              description: 'Kegiatan pendidikan dan pembelajaran untuk mendukung pengembangan pengetahuan.',
+            ),
+          ],
         ),
-        ProgramCard(
-          title: 'Pramuka',
-          category: 'Pembinaan karakter',
-          icon: Icons.explore_outlined,
-          description: 'Kegiatan untuk melatih kedisiplinan, kerja sama, dan tanggung jawab.',
-        ),
-        ProgramCard(
-          title: 'Giatja',
-          category: 'Kegiatan kerja',
+
+        SizedBox(height: 16),
+
+        // DROPDOWN PEMBINAAN KEMANDIRIAN
+        _ProgramDropdown(
+          title: 'Pembinaan Kemandirian',
+          subtitle: 'Pengembangan keterampilan dan kemampuan kerja.',
           icon: Icons.handyman_outlined,
-          description:
-              'Kegiatan kerja dan keterampilan sebagai bagian dari pembinaan.',
+          programs: [
+            ProgramCard(
+              title: 'Tataboga',
+              category: 'Keterampilan kuliner',
+              icon: Icons.restaurant_outlined,
+              description: 'Kegiatan pengembangan keterampilan dalam pengolahan dan penyajian makanan.',
+            ),
+            ProgramCard(
+              title: 'Barbershop',
+              category: 'Keterampilan jasa',
+              icon: Icons.content_cut_outlined,
+              description: 'Kegiatan pengembangan keterampilan pangkas rambut dan pelayanan jasa.',
+            ),
+            ProgramCard(
+              title: 'Budidaya',
+              category: 'Keterampilan budidaya',
+              icon: Icons.eco_outlined,
+              description: 'Kegiatan pembelajaran keterampilan budidaya dan perawatan tanaman.',
+            ),
+          ],
         ),
-        ProgramCard(
-          title: 'Futsal',
-          category: 'Olahraga',
-          icon: Icons.sports_soccer_outlined,
-          description:
-              'Kegiatan olahraga untuk membangun kebugaran dan sportivitas.',
-        ),
-        SizedBox(height: 12),
+
+        SizedBox(height: 18),
+
         NoticeCard(
           icon: Icons.info_outline_rounded,
           title: 'Informasi contoh',
-          message: 'Daftar dan deskripsi ini merupakan rancangan UI. Konten final dapat disesuaikan dengan data program yang dikelola petugas.',
+          message: 'Konten final dapat disesuaikan dengan data program yang dikelola petugas.',
         ),
       ],
+    ),
+  );
+}
+
+class _ProgramDropdown extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<Widget> programs;
+
+  const _ProgramDropdown({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.programs,
+  });
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(18),
+    clipBehavior: Clip.antiAlias,
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE3EAF2)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF1F8),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: HaloMinnaApp.navy),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              color: HaloMinnaApp.ink,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(
+              subtitle,
+              style: const TextStyle(color: Color(0xFF718096), fontSize: 12),
+            ),
+          ),
+          trailing: const Icon(Icons.keyboard_arrow_down_rounded),
+          children: programs
+              .map(
+                (program) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: program,
+                ),
+              )
+              .toList(),
+        ),
+      ),
     ),
   );
 }
@@ -1162,15 +1639,14 @@ class DaftarProgramScreen extends StatelessWidget {
   const DaftarProgramScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Daftar Program Integrasi')),
+    appBar: AppBar(title: const Text('Daftar Program Pembinaan')),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
       children: const [
         SectionIntro(
           eyebrow: 'DAFTAR KEGIATAN',
           title: 'Kenali program pembinaan',
-          subtitle:
-              'Ringkasan kegiatan pembinaan yang ditampilkan untuk keluarga.',
+          subtitle: 'Kegiatan Program pembinaan di Lapas Kelas IIA Banceuy.',
         ),
         SizedBox(height: 20),
         ProgramCard(
@@ -1193,10 +1669,16 @@ class DaftarProgramScreen extends StatelessWidget {
           description: 'Kegiatan kerja dan pengembangan keterampilan.',
         ),
         ProgramCard(
+          title: 'Sanggar Kegiatan Belajar (SKB)',
+          category: 'Pendidikan dan pembelajaran',
+          icon: Icons.school_outlined,
+          description: 'Kegiatan pendidikan dan pembelajaran untuk mendukung pengembangan diri serta keterampilan.',
+        ),
+        ProgramCard(
           title: 'Futsal',
           category: 'Olahraga',
           icon: Icons.sports_soccer_outlined,
-          description: 'Olahraga tim untuk kebugaran dan sportivitas.',
+          description: 'Kegiatan olahraga untuk kebugaran dan sportivitas.',
         ),
       ],
     ),
@@ -1205,57 +1687,214 @@ class DaftarProgramScreen extends StatelessWidget {
 
 class StatistikScreen extends StatelessWidget {
   const StatistikScreen({super.key});
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Statistik')),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-      children: const [
-        SectionIntro(
+      children: [
+        const SectionIntro(
           eyebrow: 'RINGKASAN',
           title: 'Statistik Program',
-          subtitle: 'Rancangan tampilan ringkasan keikutsertaan dalam program integrasi.',
+          subtitle: 'Ringkasan jumlah WBP berdasarkan tahapan program integrasi dan kegiatan pembinaan di Lapas Banceuy.',
         ),
-        SizedBox(height: 20),
-        FeatureBanner(
-          icon: Icons.bar_chart_rounded,
-          title: 'Data statistik belum terhubung',
-          body: 'Angka partisipasi akan diisi dari data WBP setelah API tersedia.',
+        const SizedBox(height: 22),
+
+        // DROPDOWN PROGRAM INTEGRASI
+        _StatistikDropdown(
+          title: 'Program Integrasi',
+          subtitle: 'Jumlah WBP berdasarkan tahapan program',
+          icon: Icons.account_tree_outlined,
+          items: const [
+            _StatistikItem(title: 'Pengambilan Berkas', jumlah: 0),
+            _StatistikItem(title: 'Pengembalian Berkas', jumlah: 0),
+            _StatistikItem(title: 'Sidang TPP', jumlah: 0),
+            _StatistikItem(title: 'Permintaan Litmas', jumlah: 0),
+            _StatistikItem(title: 'Litmas Bapas', jumlah: 0),
+            _StatistikItem(title: 'Hasil Litmas', jumlah: 0),
+            _StatistikItem(title: 'Verifikasi Ditjen', jumlah: 0),
+            _StatistikItem(title: 'Persetujuan Menteri', jumlah: 0),
+            _StatistikItem(title: 'Otorisasi SK', jumlah: 0),
+            _StatistikItem(title: 'Pelaksanaan', jumlah: 0),
+            _StatistikItem(title: 'Selesai', jumlah: 0),
+          ],
         ),
-        SizedBox(height: 22),
-        Text(
-          'Status Keaktifan',
-          style: TextStyle(
-            color: HaloMinnaApp.ink,
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-          ),
+
+        const SizedBox(height: 16),
+
+        // DROPDOWN PROGRAM PEMBINAAN
+        _StatistikDropdown(
+          title: 'Program Pembinaan',
+          subtitle: 'Persentase WBP yang mengikuti setiap program',
+          icon: Icons.diversity_3_outlined,
+          showPercentage: true,
+          items: const [
+            _StatistikItem(title: 'Santri', jumlah: 0),
+            _StatistikItem(title: 'Pramuka', jumlah: 0),
+            _StatistikItem(title: 'Sanggar Kegiatan Belajar (SKB)', jumlah: 0),
+            _StatistikItem(title: 'Tataboga', jumlah: 0),
+            _StatistikItem(title: 'Barbershop', jumlah: 0),
+            _StatistikItem(title: 'Budidaya', jumlah: 0),
+          ],
         ),
-        SizedBox(height: 12),
-        ActivityLegend(
-          color: Color(0xFF23834D),
-          title: 'Sangat Aktif',
-          detail: 'Indikator hijau',
-        ),
-        ActivityLegend(
-          color: Color(0xFFE4AE32),
-          title: 'Aktif',
-          detail: 'Indikator kuning',
-        ),
-        ActivityLegend(
-          color: Color(0xFFD64B4B),
-          title: 'Tidak Aktif',
-          detail: 'Indikator merah',
-        ),
-        SizedBox(height: 14),
-        NoticeCard(
+
+        const SizedBox(height: 18),
+
+        const NoticeCard(
           icon: Icons.info_outline_rounded,
-          title: 'Belum ada angka statistik',
-          message: 'Batas penentuan tingkat keaktifan belum ditetapkan, jadi tampilan ini belum menggunakan angka atau persentase.',
+          title: 'Statistik belum terhubung',
+          message: 'Angka saat ini merupakan nilai awal dan belum mencerminkan jumlah WBP sebenarnya. Data statistik akan ditampilkan setelah sumber data tersedia.',
         ),
       ],
     ),
   );
+}
+
+class _StatistikItem {
+  final String title;
+  final int jumlah;
+
+  const _StatistikItem({required this.title, required this.jumlah});
+}
+
+class _StatistikDropdown extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool showPercentage;
+  final List<_StatistikItem> items;
+
+  const _StatistikDropdown({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.items,
+    this.showPercentage = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = items.fold<int>(0, (sum, item) => sum + item.jumlah);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE3EAF2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+            leading: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF1F8),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: HaloMinnaApp.navy),
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(
+                color: HaloMinnaApp.ink,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text(
+                subtitle,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF718096)),
+              ),
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_down_rounded),
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F6FA),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Total berdasarkan kategori',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '$total WBP',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: HaloMinnaApp.navy,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: HaloMinnaApp.ink,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        constraints: const BoxConstraints(minWidth: 38),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF1F8),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          '${item.jumlah}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: HaloMinnaApp.navy,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ActivityLegend extends StatelessWidget {
@@ -1470,20 +2109,19 @@ class TentangKamiScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         const InfoListTile(
-          icon: Icons.fact_check_outlined,
-          title: 'Status Program',
-          description: 'Informasi status dan tahapan program integrasi.',
+          icon: Icons.domain_outlined,
+          title: 'Profil UPT',
+          description: 'Informasi mengenai profil, tugas, dan fungsi Unit Pelaksana Teknis Pemasyarakatan.',
         ),
         const InfoListTile(
-          icon: Icons.menu_book_outlined,
-          title: 'Informasi Pembinaan',
-          description: 'Ringkasan program pembinaan dan kegiatan.',
+          icon: Icons.phone_android_rounded,
+          title: 'Halo Minna',
+          description: 'Layanan informasi digital untuk memudahkan keluarga WBP memperoleh informasi terkait program integrasi dan pembinaan.',
         ),
         const InfoListTile(
-          icon: Icons.lock_outline_rounded,
-          title: 'Akses Terbatas',
-          description:
-              'Informasi WBP dirancang untuk diakses menggunakan kode akses.',
+          icon: Icons.account_tree_rounded,
+          title: 'Alur Program Integrasi',
+          description: 'Informasi tahapan proses program integrasi, mulai dari pengambilan berkas hingga pelaksanaan sesuai ketentuan yang berlaku.',
         ),
         const SizedBox(height: 12),
         const NoticeCard(
@@ -1527,7 +2165,7 @@ class LogoBox extends StatelessWidget {
     child: Image.asset(
       asset,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) =>
+      errorBuilder: (_, _, _) =>
           const Icon(Icons.account_balance_outlined, color: HaloMinnaApp.navy),
     ),
   );

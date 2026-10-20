@@ -5,11 +5,11 @@ void main() {
   testWidgets('Halo Minna menampilkan halaman awal', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const HaloMinaApp());
+    await tester.pumpWidget(const HaloMinnaApp());
 
     // Selesaikan animasi splash dan timer yang berjalan.
     await tester.pump(const Duration(seconds: 2));
 
-    expect(find.byType(HaloMinaApp), findsOneWidget);
+    expect(find.byType(HaloMinnaApp), findsOneWidget);
   });
 }
