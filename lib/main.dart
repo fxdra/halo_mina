@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'services/halo_minna_api.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 void main() => runApp(const HaloMinnaApp());
 
 class HaloMinnaApp extends StatelessWidget {
@@ -418,6 +420,75 @@ class _AccessScreenState extends State<AccessScreen> {
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Keluar dari Halo Minna?'),
+        content: const Text(
+          'Anda perlu memasukkan kode akses lagi untuk '
+          'menggunakan layanan ini.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi != true || !context.mounted) return;
+
+    // Tutup semua halaman di atas Dashboard dan tampilkan indikator proses.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 14),
+                  Text('Mengakhiri sesi...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await HaloMinnaApi.logout();
+    } catch (_) {
+      // Token lokal tetap dihapus oleh service logout().
+      // Kegagalan request server tidak menghalangi keluar dari aplikasi.
+    }
+
+    if (!context.mounted) return;
+
+    // Tutup dialog proses.
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // Kembali ke halaman akses dan hapus riwayat navigasi sebelumnya.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AccessScreen()),
+      (route) => false,
+    );
+  }
+
   static const menus = <MenuData>[
     MenuData(
       'Status Program',
@@ -537,6 +608,7 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      // Tombol informasi aplikasi — tetap dipertahankan
                       IconButton(
                         onPressed: () => showDialog<void>(
                           context: context,
@@ -555,6 +627,16 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         icon: const Icon(
                           Icons.info_outline_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      // Tombol logout — tambahkan setelah tombol informasi
+                      IconButton(
+                        tooltip: 'Keluar',
+                        onPressed: () => _logout(context),
+                        icon: const Icon(
+                          Icons.logout_rounded,
                           color: Colors.white,
                         ),
                       ),
@@ -1384,12 +1466,14 @@ class TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tanggal = _parseDate(data.date);
 
-    // Tahap bertanggal dianggap selesai jika tanggalnya sudah lewat
+    /// Tahap bertanggal dianggap selesai jika tanggalnya sudah lewat
     // atau sama dengan hari ini. Tanggal mendatang belum selesai.
     final now = DateTime.now();
     final hariIni = DateTime(now.year, now.month, now.day);
 
-    final done = tanggal != null;
+    final done =
+        tanggal != null &&
+        !DateTime(tanggal.year, tanggal.month, tanggal.day).isAfter(hariIni);
 
     final Color warnaStatus = done
         ? const Color(0xFF2D8A58)
@@ -1476,96 +1560,340 @@ class TimelineRow extends StatelessWidget {
   }
 }
 
-class ProgramPembinaanScreen extends StatelessWidget {
+class ProgramPembinaanScreen extends StatefulWidget {
   const ProgramPembinaanScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Program Pembinaan')),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-      children: const [
-        SectionIntro(
-          eyebrow: 'PEMBINAAN',
-          title: 'Program Pembinaan',
-          subtitle: 'Ruang informasi kegiatan dan pembinaan yang mendukung proses integrasi.',
-        ),
-        SizedBox(height: 20),
+  State<ProgramPembinaanScreen> createState() => _ProgramPembinaanScreenState();
+}
 
-        FeatureBanner(
-          icon: Icons.diversity_3_outlined,
-          title: 'Pembinaan dan pengembangan diri',
-          body: 'Informasi program disajikan agar keluarga dapat mengenal kegiatan yang tersedia.',
-        ),
-        SizedBox(height: 22),
+class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
+  late Future<Map<String, dynamic>> _programFuture;
 
-        // DROPDOWN PEMBINAAN KEPRIBADIAN
-        _ProgramDropdown(
-          title: 'Pembinaan Kepribadian',
-          subtitle: 'Pembentukan karakter, pendidikan, dan nilai spiritual.',
-          icon: Icons.psychology_outlined,
-          programs: [
-            ProgramCard(
-              title: 'Santri',
-              category: 'Pembinaan kerohanian',
-              icon: Icons.menu_book_rounded,
-              description:
-                  'Kegiatan pembinaan keagamaan dan penguatan nilai spiritual.',
+  @override
+  void initState() {
+    super.initState();
+    _programFuture = HaloMinnaApi.getProgramDiikuti();
+  }
+
+  Future<void> _refreshProgram() async {
+    final future = HaloMinnaApi.getProgramDiikuti();
+
+    setState(() {
+      _programFuture = future;
+    });
+
+    await future;
+  }
+
+  IconData _iconProgram(String nama) {
+    final program = nama.toLowerCase();
+
+    if (program.contains('santri')) {
+      return Icons.menu_book_rounded;
+    }
+    if (program.contains('pramuka')) {
+      return Icons.explore_outlined;
+    }
+    if (program.contains('skb') || program.contains('belajar')) {
+      return Icons.school_outlined;
+    }
+    if (program.contains('futsal')) {
+      return Icons.sports_soccer_outlined;
+    }
+    if (program.contains('barbershop')) {
+      return Icons.content_cut_outlined;
+    }
+    if (program.contains('budidaya')) {
+      return Icons.eco_outlined;
+    }
+    if (program.contains('tataboga') || program.contains('pangan')) {
+      return Icons.restaurant_outlined;
+    }
+    if (program.contains('produksi') || program.contains('manufaktur')) {
+      return Icons.handyman_outlined;
+    }
+
+    return Icons.diversity_3_outlined;
+  }
+
+  String _formatTanggal(dynamic value) {
+    if (value == null || value.toString().isEmpty) {
+      return '-';
+    }
+
+    final parsed = DateTime.tryParse(value.toString());
+
+    if (parsed == null) {
+      return value.toString();
+    }
+
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+
+    return '$day-$month-${parsed.year}';
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Aktif':
+        return Colors.green;
+      case 'Selesai':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildProgramCard(BuildContext context, Map<String, dynamic> program) {
+    final nama = program['nama_program']?.toString() ?? 'Program';
+    final kategori = program['kategori']?.toString() ?? '-';
+    final status = program['status_keikutsertaan']?.toString() ?? '-';
+    final indikator = program['indikator_keaktifan']?.toString() ?? '-';
+
+    final tanggalMulai = _formatTanggal(program['tanggal_mulai']);
+
+    final tanggalSelesai = _formatTanggal(program['tanggal_selesai']);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(_iconProgram(nama), size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nama,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(kategori),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _statusColor(status).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: _statusColor(status),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            ProgramCard(
-              title: 'Pramuka',
-              category: 'Pembinaan karakter',
-              icon: Icons.explore_outlined,
-              description: 'Kegiatan untuk melatih kedisiplinan, kerja sama, dan tanggung jawab.',
-            ),
-            ProgramCard(
-              title: 'Sanggar Kegiatan Belajar (SKB)',
-              category: 'Pendidikan dan pembelajaran',
-              icon: Icons.school_outlined,
-              description: 'Kegiatan pendidikan dan pembelajaran untuk mendukung pengembangan pengetahuan.',
-            ),
+            const SizedBox(height: 16),
+            _detailProgram(context, 'Indikator keaktifan', indikator),
+            const SizedBox(height: 8),
+            _detailProgram(context, 'Tanggal mulai', tanggalMulai),
+            if ((program['keterangan']?.toString() ?? '')
+                .trim()
+                .isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _detailProgram(
+                context,
+                'Keterangan',
+                program['keterangan'].toString(),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
 
-        SizedBox(height: 16),
-
-        // DROPDOWN PEMBINAAN KEMANDIRIAN
-        _ProgramDropdown(
-          title: 'Pembinaan Kemandirian',
-          subtitle: 'Pengembangan keterampilan dan kemampuan kerja.',
-          icon: Icons.handyman_outlined,
-          programs: [
-            ProgramCard(
-              title: 'Tataboga',
-              category: 'Keterampilan kuliner',
-              icon: Icons.restaurant_outlined,
-              description: 'Kegiatan pengembangan keterampilan dalam pengolahan dan penyajian makanan.',
-            ),
-            ProgramCard(
-              title: 'Barbershop',
-              category: 'Keterampilan jasa',
-              icon: Icons.content_cut_outlined,
-              description: 'Kegiatan pengembangan keterampilan pangkas rambut dan pelayanan jasa.',
-            ),
-            ProgramCard(
-              title: 'Budidaya',
-              category: 'Keterampilan budidaya',
-              icon: Icons.eco_outlined,
-              description: 'Kegiatan pembelajaran keterampilan budidaya dan perawatan tanaman.',
-            ),
-          ],
+  Widget _detailProgram(BuildContext context, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 140,
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall),
         ),
-
-        SizedBox(height: 18),
-
-        NoticeCard(
-          icon: Icons.info_outline_rounded,
-          title: 'Informasi contoh',
-          message: 'Konten final dapat disesuaikan dengan data program yang dikelola petugas.',
+        const Text(': '),
+        Expanded(
+          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
-    ),
-  );
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Program Pembinaan')),
+      body: RefreshIndicator(
+        onRefresh: _refreshProgram,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+          children: [
+            const SectionIntro(
+              eyebrow: 'PEMBINAAN',
+              title: 'Program Pembinaan',
+              subtitle: 'Pantau program pembinaan yang diikuti beserta status dan perkembangan keaktifan.',
+            ),
+            const SizedBox(height: 20),
+            const FeatureBanner(
+              icon: Icons.diversity_3_outlined,
+              title: 'Pembinaan dan pengembangan diri',
+              body: 'Informasi program ditampilkan berdasarkan catatan pembinaan WBP yang tercatat di sistem.',
+            ),
+            const SizedBox(height: 22),
+            FutureBuilder<Map<String, dynamic>>(
+              future: _programFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 42),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Data program pembinaan belum dapat dimuat.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _refreshProgram,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final response = snapshot.data;
+                final rawData = response?['data'];
+
+                if (response?['success'] != true || rawData is! List) {
+                  return const Text(
+                    'Respons data program tidak valid.',
+                    textAlign: TextAlign.center,
+                  );
+                }
+
+                final programs = rawData
+                    .whereType<Map>()
+                    .map((item) => Map<String, dynamic>.from(item))
+                    .toList();
+
+                if (programs.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        Icon(Icons.menu_book_outlined, size: 42),
+                        SizedBox(height: 12),
+                        Text(
+                          'Belum ada program pembinaan yang tercatat diikuti.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final kepribadian = programs
+                    .where((item) => item['kategori'] == 'Kepribadian')
+                    .toList();
+
+                final kemandirian = programs
+                    .where((item) => item['kategori'] == 'Kemandirian')
+                    .toList();
+
+                final lainnya = programs
+                    .where(
+                      (item) =>
+                          item['kategori'] != 'Kepribadian' &&
+                          item['kategori'] != 'Kemandirian',
+                    )
+                    .toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${programs.length} catatan program pembinaan',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (kepribadian.isNotEmpty)
+                      _ProgramDropdown(
+                        title: 'Pembinaan Kepribadian',
+                        subtitle: 'Pembentukan karakter, pendidikan, dan nilai spiritual.',
+                        icon: Icons.psychology_outlined,
+                        programs: kepribadian
+                            .map((item) => _buildProgramCard(context, item))
+                            .toList(),
+                      ),
+
+                    if (kepribadian.isNotEmpty &&
+                        (kemandirian.isNotEmpty || lainnya.isNotEmpty))
+                      const SizedBox(height: 16),
+
+                    if (kemandirian.isNotEmpty)
+                      _ProgramDropdown(
+                        title: 'Pembinaan Kemandirian',
+                        subtitle:
+                            'Pengembangan keterampilan dan kemampuan kerja.',
+                        icon: Icons.handyman_outlined,
+                        programs: kemandirian
+                            .map((item) => _buildProgramCard(context, item))
+                            .toList(),
+                      ),
+
+                    if (lainnya.isNotEmpty) ...[
+                      if (kepribadian.isNotEmpty || kemandirian.isNotEmpty)
+                        const SizedBox(height: 16),
+                      ...lainnya.map(
+                        (item) => _buildProgramCard(context, item),
+                      ),
+                    ],
+
+                    const SizedBox(height: 18),
+                    const NoticeCard(
+                      icon: Icons.info_outline_rounded,
+                      title: 'Informasi pembinaan',
+                      message: 'Status dan indikator keaktifan mengikuti catatan yang dikelola petugas melalui sistem pembinaan.',
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ProgramDropdown extends StatelessWidget {
@@ -1635,120 +1963,416 @@ class _ProgramDropdown extends StatelessWidget {
   );
 }
 
-class DaftarProgramScreen extends StatelessWidget {
+class DaftarProgramScreen extends StatefulWidget {
   const DaftarProgramScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Daftar Program Pembinaan')),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-      children: const [
-        SectionIntro(
-          eyebrow: 'DAFTAR KEGIATAN',
-          title: 'Kenali program pembinaan',
-          subtitle: 'Kegiatan Program pembinaan di Lapas Kelas IIA Banceuy.',
-        ),
-        SizedBox(height: 20),
-        ProgramCard(
-          title: 'Santri',
-          category: 'Kerohanian',
-          icon: Icons.menu_book_rounded,
-          description: 'Pembinaan keagamaan dan pembiasaan nilai positif.',
-        ),
-        ProgramCard(
-          title: 'Pramuka',
-          category: 'Karakter dan kedisiplinan',
-          icon: Icons.explore_outlined,
-          description:
-              'Kegiatan kelompok yang menekankan kedisiplinan dan kerja sama.',
-        ),
-        ProgramCard(
-          title: 'Giatja',
-          category: 'Kerja dan keterampilan',
-          icon: Icons.handyman_outlined,
-          description: 'Kegiatan kerja dan pengembangan keterampilan.',
-        ),
-        ProgramCard(
-          title: 'Sanggar Kegiatan Belajar (SKB)',
-          category: 'Pendidikan dan pembelajaran',
-          icon: Icons.school_outlined,
-          description: 'Kegiatan pendidikan dan pembelajaran untuk mendukung pengembangan diri serta keterampilan.',
-        ),
-        ProgramCard(
-          title: 'Futsal',
-          category: 'Olahraga',
-          icon: Icons.sports_soccer_outlined,
-          description: 'Kegiatan olahraga untuk kebugaran dan sportivitas.',
-        ),
-      ],
-    ),
-  );
+  State<DaftarProgramScreen> createState() => _DaftarProgramScreenState();
 }
 
-class StatistikScreen extends StatelessWidget {
+class _DaftarProgramScreenState extends State<DaftarProgramScreen> {
+  late Future<Map<String, dynamic>> _programFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _programFuture = HaloMinnaApi.getProgramPembinaan();
+  }
+
+  Future<void> _refreshProgram() async {
+    final future = HaloMinnaApi.getProgramPembinaan();
+
+    setState(() {
+      _programFuture = future;
+    });
+
+    await future;
+  }
+
+  IconData _iconProgram(String kategori, String nama) {
+    final program = nama.toLowerCase();
+
+    if (program.contains('santri')) {
+      return Icons.menu_book_rounded;
+    }
+    if (program.contains('pramuka')) {
+      return Icons.explore_outlined;
+    }
+    if (program.contains('sekolah') ||
+        program.contains('belajar') ||
+        program.contains('skb')) {
+      return Icons.school_outlined;
+    }
+    if (program.contains('futsal')) {
+      return Icons.sports_soccer_outlined;
+    }
+    if (program.contains('barbershop')) {
+      return Icons.content_cut_outlined;
+    }
+    if (program.contains('budidaya')) {
+      return Icons.eco_outlined;
+    }
+    if (program.contains('pangan') || program.contains('tataboga')) {
+      return Icons.restaurant_outlined;
+    }
+    if (program.contains('produksi') || program.contains('manufaktur')) {
+      return Icons.handyman_outlined;
+    }
+
+    return kategori == 'Kepribadian'
+        ? Icons.groups_outlined
+        : Icons.work_outline_rounded;
+  }
+
+  String _kategoriLabel(String kategori) {
+    switch (kategori) {
+      case 'Kepribadian':
+        return 'Pembinaan Kepribadian';
+      case 'Kemandirian':
+        return 'Pembinaan Kemandirian';
+      default:
+        return kategori;
+    }
+  }
+
+  String _deskripsiProgram(String kategori, String nama) {
+    final program = nama.toLowerCase();
+
+    if (program.contains('santri')) {
+      return 'Pembinaan keagamaan dan pembiasaan nilai positif.';
+    }
+    if (program.contains('pramuka')) {
+      return 'Kegiatan yang menekankan kedisiplinan, karakter, dan kerja sama.';
+    }
+    if (program.contains('sekolah') ||
+        program.contains('belajar') ||
+        program.contains('skb')) {
+      return 'Kegiatan pendidikan dan pembelajaran untuk mendukung pengembangan diri.';
+    }
+    if (program.contains('futsal')) {
+      return 'Kegiatan olahraga untuk kebugaran dan sportivitas.';
+    }
+    if (program.contains('barbershop')) {
+      return 'Pengembangan keterampilan di bidang pangkas rambut.';
+    }
+    if (program.contains('budidaya')) {
+      return 'Pengembangan keterampilan dalam kegiatan budidaya.';
+    }
+    if (program.contains('pangan') || program.contains('tataboga')) {
+      return 'Pengembangan keterampilan dalam pengolahan makanan.';
+    }
+    if (program.contains('produksi') || program.contains('manufaktur')) {
+      return 'Pengembangan keterampilan dalam bidang produksi dan manufaktur.';
+    }
+
+    return kategori == 'Kepribadian'
+        ? 'Kegiatan untuk mendukung pembentukan karakter dan pengembangan diri.'
+        : 'Kegiatan untuk mengembangkan keterampilan dan kemandirian.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Daftar Program Pembinaan')),
+      body: RefreshIndicator(
+        onRefresh: _refreshProgram,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+          children: [
+            const SectionIntro(
+              eyebrow: 'DAFTAR KEGIATAN',
+              title: 'Kenali program pembinaan',
+              subtitle:
+                  'Kegiatan program pembinaan di Lapas Kelas IIA Banceuy.',
+            ),
+            const SizedBox(height: 20),
+
+            FutureBuilder<Map<String, dynamic>>(
+              future: _programFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 42),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Program pembinaan belum dapat dimuat.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _refreshProgram,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final response = snapshot.data;
+                final rawData = response?['data'];
+
+                if (response?['success'] != true ||
+                    rawData is! List ||
+                    rawData.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      'Belum ada program pembinaan yang tersedia.',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+
+                final programs = rawData
+                    .whereType<Map>()
+                    .map((item) => Map<String, dynamic>.from(item))
+                    .toList();
+
+                final kepribadian = programs
+                    .where((item) => item['kategori'] == 'Kepribadian')
+                    .toList();
+
+                final kemandirian = programs
+                    .where((item) => item['kategori'] == 'Kemandirian')
+                    .toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (kepribadian.isNotEmpty) ...[
+                      Text(
+                        'PEMBINAAN KEPRIBADIAN',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 10),
+                      ...kepribadian.map((program) {
+                        final nama =
+                            program['nama_program']?.toString() ?? 'Program';
+                        final kategori = program['kategori']?.toString() ?? '';
+
+                        return ProgramCard(
+                          title: nama,
+                          category: _kategoriLabel(kategori),
+                          icon: _iconProgram(kategori, nama),
+                          description: _deskripsiProgram(kategori, nama),
+                        );
+                      }),
+                      const SizedBox(height: 12),
+                    ],
+
+                    if (kemandirian.isNotEmpty) ...[
+                      Text(
+                        'PEMBINAAN KEMANDIRIAN',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 10),
+                      ...kemandirian.map((program) {
+                        final nama =
+                            program['nama_program']?.toString() ?? 'Program';
+                        final kategori = program['kategori']?.toString() ?? '';
+
+                        return ProgramCard(
+                          title: nama,
+                          category: _kategoriLabel(kategori),
+                          icon: _iconProgram(kategori, nama),
+                          description: _deskripsiProgram(kategori, nama),
+                        );
+                      }),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StatistikScreen extends StatefulWidget {
   const StatistikScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Statistik')),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-      children: [
-        const SectionIntro(
-          eyebrow: 'RINGKASAN',
-          title: 'Statistik Program',
-          subtitle: 'Ringkasan jumlah WBP berdasarkan tahapan program integrasi dan kegiatan pembinaan di Lapas Banceuy.',
-        ),
-        const SizedBox(height: 22),
+  State<StatistikScreen> createState() => _StatistikScreenState();
+}
 
-        // DROPDOWN PROGRAM INTEGRASI
-        _StatistikDropdown(
-          title: 'Program Integrasi',
-          subtitle: 'Jumlah WBP berdasarkan tahapan program',
-          icon: Icons.account_tree_outlined,
-          items: const [
-            _StatistikItem(title: 'Pengambilan Berkas', jumlah: 0),
-            _StatistikItem(title: 'Pengembalian Berkas', jumlah: 0),
-            _StatistikItem(title: 'Sidang TPP', jumlah: 0),
-            _StatistikItem(title: 'Permintaan Litmas', jumlah: 0),
-            _StatistikItem(title: 'Litmas Bapas', jumlah: 0),
-            _StatistikItem(title: 'Hasil Litmas', jumlah: 0),
-            _StatistikItem(title: 'Verifikasi Ditjen', jumlah: 0),
-            _StatistikItem(title: 'Persetujuan Menteri', jumlah: 0),
-            _StatistikItem(title: 'Otorisasi SK', jumlah: 0),
-            _StatistikItem(title: 'Pelaksanaan', jumlah: 0),
-            _StatistikItem(title: 'Selesai', jumlah: 0),
+class _StatistikScreenState extends State<StatistikScreen> {
+  bool _loading = true;
+  String? _error;
+  Map<String, dynamic>? _statistik;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatistik();
+  }
+
+  Future<void> _loadStatistik() async {
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final response = await HaloMinnaApi.getStatistikPembinaan();
+
+      if (!mounted) return;
+
+      setState(() {
+        _statistik = Map<String, dynamic>.from(response['data'] as Map);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
+      });
+    }
+  }
+
+  int _toInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  List<_StatistikItem> _buildItemsPembinaan() {
+    final rawItems = _statistik?['per_program'];
+
+    if (rawItems is! List) return [];
+
+    return rawItems.map((raw) {
+      final item = Map<String, dynamic>.from(raw as Map);
+
+      return _StatistikItem(
+        title: item['nama_program']?.toString() ?? 'Program',
+        jumlah: _toInt(item['jumlah_wbp']),
+      );
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Statistik'),
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang statistik',
+            onPressed: _loading ? null : _loadStatistik,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadStatistik,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+          children: [
+            const SectionIntro(
+              eyebrow: 'RINGKASAN',
+              title: 'Statistik Program',
+              subtitle:
+                  'Ringkasan jumlah WBP berdasarkan tahapan program '
+                  'integrasi dan kegiatan pembinaan di Lapas Banceuy.',
+            ),
+            const SizedBox(height: 22),
+
+            // DROPDOWN PROGRAM INTEGRASI
+            _StatistikDropdown(
+              title: 'Program Integrasi',
+              subtitle: 'Jumlah WBP berdasarkan tahapan program',
+              icon: Icons.account_tree_outlined,
+              items: const [
+                _StatistikItem(title: 'Pengambilan Berkas', jumlah: 0),
+                _StatistikItem(title: 'Pengembalian Berkas', jumlah: 0),
+                _StatistikItem(title: 'Sidang TPP', jumlah: 0),
+                _StatistikItem(title: 'Permintaan Litmas', jumlah: 0),
+                _StatistikItem(title: 'Litmas Bapas', jumlah: 0),
+                _StatistikItem(title: 'Hasil Litmas', jumlah: 0),
+                _StatistikItem(title: 'Verifikasi Ditjen', jumlah: 0),
+                _StatistikItem(title: 'Persetujuan Menteri', jumlah: 0),
+                _StatistikItem(title: 'Otorisasi SK', jumlah: 0),
+                _StatistikItem(title: 'Pelaksanaan', jumlah: 0),
+                _StatistikItem(title: 'Selesai', jumlah: 0),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // DROPDOWN PROGRAM PEMBINAAN
+            if (_loading)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_error != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.cloud_off_outlined, size: 36),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Statistik pembinaan gagal dimuat.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(_error!, textAlign: TextAlign.center),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: _loadStatistik,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              _StatistikDropdown(
+                title: 'Program Pembinaan',
+                subtitle: 'Jumlah WBP yang mengikuti setiap program',
+                icon: Icons.diversity_3_outlined,
+                showPercentage: false,
+                items: _buildItemsPembinaan(),
+              ),
+
+            const SizedBox(height: 18),
+
+            const NoticeCard(
+              icon: Icons.info_outline_rounded,
+              title: 'Informasi Statistik',
+              message:
+                  'Data menunjukkan jumlah WBP aktif yang mengikuti '
+                  'setiap program pembinaan di Lapas Banceuy. '
+                  'Statistik program integrasi akan ditampilkan '
+                  'setelah data tersedia.',
+            ),
           ],
         ),
-
-        const SizedBox(height: 16),
-
-        // DROPDOWN PROGRAM PEMBINAAN
-        _StatistikDropdown(
-          title: 'Program Pembinaan',
-          subtitle: 'Persentase WBP yang mengikuti setiap program',
-          icon: Icons.diversity_3_outlined,
-          showPercentage: true,
-          items: const [
-            _StatistikItem(title: 'Santri', jumlah: 0),
-            _StatistikItem(title: 'Pramuka', jumlah: 0),
-            _StatistikItem(title: 'Sanggar Kegiatan Belajar (SKB)', jumlah: 0),
-            _StatistikItem(title: 'Tataboga', jumlah: 0),
-            _StatistikItem(title: 'Barbershop', jumlah: 0),
-            _StatistikItem(title: 'Budidaya', jumlah: 0),
-          ],
-        ),
-
-        const SizedBox(height: 18),
-
-        const NoticeCard(
-          icon: Icons.info_outline_rounded,
-          title: 'Statistik belum terhubung',
-          message: 'Angka saat ini merupakan nilai awal dan belum mencerminkan jumlah WBP sebenarnya. Data statistik akan ditampilkan setelah sumber data tersedia.',
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _StatistikItem {
@@ -1944,6 +2568,7 @@ class ActivityLegend extends StatelessWidget {
 
 class KritikSaranScreen extends StatefulWidget {
   const KritikSaranScreen({super.key});
+
   @override
   State<KritikSaranScreen> createState() => _KritikSaranScreenState();
 }
@@ -1951,11 +2576,67 @@ class KritikSaranScreen extends StatefulWidget {
 class _KritikSaranScreenState extends State<KritikSaranScreen> {
   final _formKey = GlobalKey<FormState>();
   final _message = TextEditingController();
+
   String _type = 'Saran';
+
+  // GANTI dengan nomor WhatsApp Admin Bimkemaswat.
+  // Format: kode negara + nomor, tanpa tanda +.
+  static const String _adminWhatsApp = '62XXXXXXXXXX';
+
   @override
   void dispose() {
     _message.dispose();
     super.dispose();
+  }
+
+  Future<void> _kirimWhatsApp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final pesan =
+        '''
+Assalamu'alaikum Admin Bimkemaswat.
+
+Saya ingin menyampaikan $_type melalui aplikasi Halo Minna.
+
+Pesan:
+${_message.text.trim()}
+
+Terima kasih.
+''';
+
+    final nomor = _adminWhatsApp;
+
+    if (nomor.contains('X') || nomor.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nomor WhatsApp Admin belum dikonfigurasi.'),
+        ),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://wa.me/$nomor?text=${Uri.encodeComponent(pesan)}',
+    );
+
+    try {
+      final berhasil = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!berhasil && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('WhatsApp tidak dapat dibuka.')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kendala saat membuka WhatsApp.')),
+      );
+    }
   }
 
   @override
@@ -1967,14 +2648,13 @@ class _KritikSaranScreenState extends State<KritikSaranScreen> {
         const SectionIntro(
           eyebrow: 'SUARA PENGGUNA',
           title: 'Kritik & Saran',
-          subtitle:
-              'Masukan dapat membantu peningkatan kualitas layanan Halo Minna.',
+          subtitle: 'Sampaikan masukan untuk membantu meningkatkan kualitas layanan Halo Minna.',
         ),
         const SizedBox(height: 20),
         const FeatureBanner(
           icon: Icons.chat_bubble_outline_rounded,
-          title: 'Sampaikan masukan',
-          body: 'Form ini masih berupa rancangan. Pengiriman belum aktif karena kanal resmi belum dikonfigurasi.',
+          title: 'Terhubung dengan Admin',
+          body: 'Kritik dan saran akan diteruskan melalui WhatsApp Admin Bimkemaswat.',
         ),
         const SizedBox(height: 18),
         Container(
@@ -2012,7 +2692,9 @@ class _KritikSaranScreenState extends State<KritikSaranScreen> {
                     ),
                   ],
                   selected: {_type},
-                  onSelectionChanged: (v) => setState(() => _type = v.first),
+                  onSelectionChanged: (v) {
+                    setState(() => _type = v.first);
+                  },
                 ),
                 const SizedBox(height: 18),
                 TextFormField(
@@ -2031,18 +2713,9 @@ class _KritikSaranScreenState extends State<KritikSaranScreen> {
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
-                  onPressed: () {
-                    if (!_formKey.currentState!.validate()) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'UI demo: pesan belum dikirim. Kanal pengiriman perlu dikonfigurasi.',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.send_outlined),
-                  label: const Text('Pratinjau Pengiriman'),
+                  onPressed: _kirimWhatsApp,
+                  icon: const Icon(Icons.chat_rounded),
+                  label: const Text('Lanjutkan ke WhatsApp'),
                   style: FilledButton.styleFrom(
                     backgroundColor: HaloMinnaApp.navy,
                     padding: const EdgeInsets.symmetric(vertical: 15),
