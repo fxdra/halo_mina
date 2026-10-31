@@ -47,10 +47,11 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
+  ios: true
   image_path: "assets/icon/halo_minna_icon.png"
+  min_sdk_android: 21
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon/halo_minna_foreground.png"
-  min_sdk_android: 21
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
