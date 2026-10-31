@@ -461,7 +461,7 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 14),
-                  Text('Mengakhiri sesi...'),
+                  Text('Mohon tunggu...'),
                 ],
               ),
             ),
@@ -935,7 +935,7 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 14),
-              Text('Memuat data status program...'),
+              Text('Mohon tunggu...'),
             ],
           ),
         ),
@@ -1653,8 +1653,6 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
 
     final tanggalMulai = _formatTanggal(program['tanggal_mulai']);
 
-    final tanggalSelesai = _formatTanggal(program['tanggal_selesai']);
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -2209,9 +2207,13 @@ class StatistikScreen extends StatefulWidget {
 }
 
 class _StatistikScreenState extends State<StatistikScreen> {
-  bool _loading = true;
-  String? _error;
-  Map<String, dynamic>? _statistik;
+  bool _loadingPembinaan = true;
+  String? _errorPembinaan;
+  Map<String, dynamic>? _statistikPembinaan;
+
+  bool _loadingIntegrasi = true;
+  String? _errorIntegrasi;
+  Map<String, dynamic>? _statistikIntegrasi;
 
   @override
   void initState() {
@@ -2220,10 +2222,14 @@ class _StatistikScreenState extends State<StatistikScreen> {
   }
 
   Future<void> _loadStatistik() async {
+    await Future.wait([_loadStatistikPembinaan(), _loadStatistikIntegrasi()]);
+  }
+
+  Future<void> _loadStatistikPembinaan() async {
     if (mounted) {
       setState(() {
-        _loading = true;
-        _error = null;
+        _loadingPembinaan = true;
+        _errorPembinaan = null;
       });
     }
 
@@ -2233,15 +2239,46 @@ class _StatistikScreenState extends State<StatistikScreen> {
       if (!mounted) return;
 
       setState(() {
-        _statistik = Map<String, dynamic>.from(response['data'] as Map);
-        _loading = false;
+        _statistikPembinaan = Map<String, dynamic>.from(
+          response['data'] as Map,
+        );
+        _loadingPembinaan = false;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-        _loading = false;
+        _errorPembinaan = e.toString().replaceFirst('Exception: ', '');
+        _loadingPembinaan = false;
+      });
+    }
+  }
+
+  Future<void> _loadStatistikIntegrasi() async {
+    if (mounted) {
+      setState(() {
+        _loadingIntegrasi = true;
+        _errorIntegrasi = null;
+      });
+    }
+
+    try {
+      final response = await HaloMinnaApi.getStatistikIntegrasi();
+
+      if (!mounted) return;
+
+      setState(() {
+        _statistikIntegrasi = Map<String, dynamic>.from(
+          response['data'] as Map,
+        );
+        _loadingIntegrasi = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorIntegrasi = e.toString().replaceFirst('Exception: ', '');
+        _loadingIntegrasi = false;
       });
     }
   }
@@ -2252,12 +2289,12 @@ class _StatistikScreenState extends State<StatistikScreen> {
   }
 
   List<_StatistikItem> _buildItemsPembinaan() {
-    final rawItems = _statistik?['per_program'];
+    final rawItems = _statistikPembinaan?['per_program'];
 
     if (rawItems is! List) return [];
 
-    return rawItems.map((raw) {
-      final item = Map<String, dynamic>.from(raw as Map);
+    return rawItems.whereType<Map>().map((raw) {
+      final item = Map<String, dynamic>.from(raw);
 
       return _StatistikItem(
         title: item['nama_program']?.toString() ?? 'Program',
@@ -2266,15 +2303,32 @@ class _StatistikScreenState extends State<StatistikScreen> {
     }).toList();
   }
 
+  List<_StatistikItem> _buildItemsIntegrasi() {
+    final rawItems = _statistikIntegrasi?['per_tahapan'];
+
+    if (rawItems is! List) return [];
+
+    return rawItems.whereType<Map>().map((raw) {
+      final item = Map<String, dynamic>.from(raw);
+
+      return _StatistikItem(
+        title: item['tahapan']?.toString() ?? 'Tahapan',
+        jumlah: _toInt(item['jumlah_wbp']),
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loading = _loadingPembinaan || _loadingIntegrasi;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistik'),
         actions: [
           IconButton(
             tooltip: 'Muat ulang statistik',
-            onPressed: _loading ? null : _loadStatistik,
+            onPressed: loading ? null : _loadStatistik,
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -2294,37 +2348,57 @@ class _StatistikScreenState extends State<StatistikScreen> {
             ),
             const SizedBox(height: 22),
 
-            // DROPDOWN PROGRAM INTEGRASI
-            _StatistikDropdown(
-              title: 'Program Integrasi',
-              subtitle: 'Jumlah WBP berdasarkan tahapan program',
-              icon: Icons.account_tree_outlined,
-              items: const [
-                _StatistikItem(title: 'Pengambilan Berkas', jumlah: 0),
-                _StatistikItem(title: 'Pengembalian Berkas', jumlah: 0),
-                _StatistikItem(title: 'Sidang TPP', jumlah: 0),
-                _StatistikItem(title: 'Permintaan Litmas', jumlah: 0),
-                _StatistikItem(title: 'Litmas Bapas', jumlah: 0),
-                _StatistikItem(title: 'Hasil Litmas', jumlah: 0),
-                _StatistikItem(title: 'Verifikasi Ditjen', jumlah: 0),
-                _StatistikItem(title: 'Persetujuan Menteri', jumlah: 0),
-                _StatistikItem(title: 'Otorisasi SK', jumlah: 0),
-                _StatistikItem(title: 'Pelaksanaan', jumlah: 0),
-                _StatistikItem(title: 'Selesai', jumlah: 0),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // DROPDOWN PROGRAM PEMBINAAN
-            if (_loading)
+            // PROGRAM INTEGRASI
+            if (_loadingIntegrasi)
               const Card(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Center(child: CircularProgressIndicator()),
                 ),
               )
-            else if (_error != null)
+            else if (_errorIntegrasi != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.cloud_off_outlined, size: 36),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Statistik integrasi gagal dimuat.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(_errorIntegrasi!, textAlign: TextAlign.center),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: _loadStatistikIntegrasi,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              _StatistikDropdown(
+                title: 'Program Integrasi',
+                subtitle: 'Jumlah WBP berdasarkan tahapan program',
+                icon: Icons.account_tree_outlined,
+                items: _buildItemsIntegrasi(),
+              ),
+
+            const SizedBox(height: 16),
+
+            // PROGRAM PEMBINAAN
+            if (_loadingPembinaan)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_errorPembinaan != null)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -2337,10 +2411,10 @@ class _StatistikScreenState extends State<StatistikScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
-                      Text(_error!, textAlign: TextAlign.center),
+                      Text(_errorPembinaan!, textAlign: TextAlign.center),
                       const SizedBox(height: 12),
                       FilledButton.icon(
-                        onPressed: _loadStatistik,
+                        onPressed: _loadStatistikPembinaan,
                         icon: const Icon(Icons.refresh),
                         label: const Text('Coba Lagi'),
                       ),
@@ -2363,10 +2437,10 @@ class _StatistikScreenState extends State<StatistikScreen> {
               icon: Icons.info_outline_rounded,
               title: 'Informasi Statistik',
               message:
-                  'Data menunjukkan jumlah WBP aktif yang mengikuti '
-                  'setiap program pembinaan di Lapas Banceuy. '
-                  'Statistik program integrasi akan ditampilkan '
-                  'setelah data tersedia.',
+                  'Data statistik integrasi menunjukkan jumlah WBP '
+                  'berdasarkan tahapan terakhir yang tercatat. '
+                  'Statistik pembinaan menunjukkan jumlah WBP '
+                  'yang mengikuti setiap program pembinaan.',
             ),
           ],
         ),

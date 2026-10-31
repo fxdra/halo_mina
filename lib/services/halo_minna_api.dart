@@ -96,6 +96,12 @@ class HaloMinnaApi {
     return _getAuthenticated('/halo-minna/program-pembinaan/statistik');
   }
 
+  // ==================== STATISTIK INTEGRASI ====================
+
+  static Future<Map<String, dynamic>> getStatistikIntegrasi() async {
+    return _getAuthenticated('/halo-minna/program-integrasi/statistik');
+  }
+
   // ==================== REQUEST TERAUTENTIKASI ====================
 
   static Future<Map<String, dynamic>> _getAuthenticated(String endpoint) async {
