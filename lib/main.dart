@@ -1122,6 +1122,473 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
   }
 }
 
+class AlurProgramIntegrasiScreen extends StatefulWidget {
+  const AlurProgramIntegrasiScreen({super.key});
+
+  @override
+  State<AlurProgramIntegrasiScreen> createState() =>
+      _AlurProgramIntegrasiScreenState();
+}
+
+class _AlurProgramIntegrasiScreenState
+    extends State<AlurProgramIntegrasiScreen> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
+  static const List<AlurTahapData> _tahapan = [
+    AlurTahapData(
+      nomor: 1,
+      instansi: 'UPT',
+      judul: 'Persiapan dan Sidang TPP',
+      icon: Icons.account_balance_rounded,
+      deskripsi: 'Tahap awal pengusulan program integrasi.',
+      aktivitas: [
+        AlurAktivitas(
+          'Melakukan pendataan narapidana',
+          Icons.people_outline_rounded,
+        ),
+        AlurAktivitas(
+          'Melengkapi input data dan dokumen',
+          Icons.description_outlined,
+        ),
+        AlurAktivitas(
+          'Membuat daftar usulan sidang TPP',
+          Icons.assignment_outlined,
+        ),
+        AlurAktivitas('Melaksanakan sidang TPP', Icons.groups_outlined),
+      ],
+    ),
+    AlurTahapData(
+      nomor: 2,
+      instansi: 'KANWIL',
+      judul: 'Verifikasi Hasil Sidang',
+      icon: Icons.business_rounded,
+      deskripsi: 'Pemeriksaan usulan oleh Kantor Wilayah.',
+      aktivitas: [
+        AlurAktivitas(
+          'Melakukan verifikasi hasil sidang TPP',
+          Icons.fact_check_outlined,
+        ),
+        AlurAktivitas(
+          'Jangka waktu maksimal 3 hari sejak usulan diterima dari UPT',
+          Icons.schedule_rounded,
+        ),
+      ],
+    ),
+    AlurTahapData(
+      nomor: 3,
+      instansi: 'UPT',
+      judul: 'Verifikasi dan Konsolidasi',
+      icon: Icons.account_balance_rounded,
+      deskripsi: 'Tindak lanjut hasil verifikasi dari Kanwil.',
+      aktivitas: [
+        AlurAktivitas(
+          'Menerima hasil verifikasi dari Kanwil',
+          Icons.inbox_outlined,
+        ),
+        AlurAktivitas('Kontrol sidang', Icons.fact_check_outlined),
+        AlurAktivitas('Verifikasi sidang TPP', Icons.verified_outlined),
+        AlurAktivitas('Upload surat pengantar', Icons.cloud_upload_outlined),
+        AlurAktivitas(
+          'Kirim terima data dan dokumen (konsolidasi)',
+          Icons.sync_alt_rounded,
+        ),
+      ],
+    ),
+    AlurTahapData(
+      nomor: 4,
+      instansi: 'DITJEN PAS',
+      judul: 'Persetujuan dan Penerbitan SK',
+      icon: Icons.account_balance_rounded,
+      deskripsi: 'Proses verifikasi dan persetujuan di tingkat pusat.',
+      aktivitas: [
+        AlurAktivitas('Melakukan verifikasi usulan', Icons.fact_check_outlined),
+        AlurAktivitas(
+          'Membuat persetujuan',
+          Icons.check_circle_outline_rounded,
+        ),
+        AlurAktivitas('Generate SK', Icons.description_rounded),
+      ],
+    ),
+    AlurTahapData(
+      nomor: 5,
+      instansi: 'KANWIL',
+      judul: 'Pencetakan SK',
+      icon: Icons.business_rounded,
+      deskripsi: 'Kantor Wilayah memproses dokumen keputusan.',
+      aktivitas: [AlurAktivitas('Cetak SK', Icons.print_rounded)],
+    ),
+    AlurTahapData(
+      nomor: 6,
+      instansi: 'UPT',
+      judul: 'Penerimaan SK',
+      icon: Icons.account_balance_rounded,
+      deskripsi: 'Tahap akhir penerimaan dokumen keputusan.',
+      aktivitas: [
+        AlurAktivitas('Menerima data dari Pusat', Icons.download_done_rounded),
+        AlurAktivitas('Melaksanakan pencetakan SK', Icons.print_rounded),
+      ],
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.88);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _pindahTahap(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Alur Program Integrasi')),
+      body: ListView(
+        padding: const EdgeInsets.only(top: 20, bottom: 30),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PROSEDUR PENGUSULAN',
+                  style: TextStyle(
+                    color: HaloMinnaApp.blue,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Alur Program Integrasi',
+                  style: TextStyle(
+                    color: HaloMinnaApp.navy,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Pelajari tahapan proses pengusulan program '
+                  'integrasi mulai dari UPT hingga penerimaan SK.',
+                  style: TextStyle(
+                    color: HaloMinnaApp.muted,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF1F8),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.swipe_rounded,
+                        color: HaloMinnaApp.navy,
+                        size: 22,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Geser ke kiri atau kanan untuk melihat '
+                          'tahapan berikutnya.',
+                          style: TextStyle(
+                            color: HaloMinnaApp.navy,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          SizedBox(
+            height: 510,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _tahapan.length,
+              onPageChanged: (index) {
+                setState(() => _currentPage = index);
+              },
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  child: _AlurTahapCard(
+                    tahap: _tahapan[index],
+                    aktif: _currentPage == index,
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _tahapan.length,
+              (index) => GestureDetector(
+                onTap: () => _pindahTahap(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentPage == index ? 23 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _currentPage == index
+                        ? HaloMinnaApp.gold
+                        : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Center(
+            child: Text(
+              'Tahap ${_currentPage + 1} dari ${_tahapan.length}',
+              style: const TextStyle(
+                color: HaloMinnaApp.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AlurTahapData {
+  final int nomor;
+  final String instansi;
+  final String judul;
+  final String deskripsi;
+  final IconData icon;
+  final List<AlurAktivitas> aktivitas;
+
+  const AlurTahapData({
+    required this.nomor,
+    required this.instansi,
+    required this.judul,
+    required this.icon,
+    required this.deskripsi,
+    required this.aktivitas,
+  });
+}
+
+class AlurAktivitas {
+  final String judul;
+  final IconData icon;
+
+  const AlurAktivitas(this.judul, this.icon);
+}
+
+class _AlurTahapCard extends StatelessWidget {
+  final AlurTahapData tahap;
+  final bool aktif;
+
+  const _AlurTahapCard({required this.tahap, required this.aktif});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.all(19),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: aktif
+              ? [Colors.white, const Color(0xFFF0F5FC)]
+              : [Colors.white, const Color(0xFFF7F9FC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: aktif ? HaloMinnaApp.gold : HaloMinnaApp.line,
+          width: aktif ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: HaloMinnaApp.navy.withValues(alpha: aktif ? 0.12 : 0.05),
+            blurRadius: aktif ? 18 : 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 43,
+                height: 43,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: aktif ? HaloMinnaApp.gold : HaloMinnaApp.navy,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Text(
+                  tahap.nomor.toString().padLeft(2, '0'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${tahap.nomor} / 6',
+                style: const TextStyle(
+                  color: HaloMinnaApp.muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 19),
+
+          Center(
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF1D6),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(tahap.icon, size: 45, color: HaloMinnaApp.navy),
+            ),
+          ),
+
+          const SizedBox(height: 13),
+
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+              decoration: BoxDecoration(
+                color: HaloMinnaApp.navy,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Text(
+                tahap.instansi,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 17),
+
+          Text(
+            tahap.judul,
+            style: const TextStyle(
+              color: HaloMinnaApp.ink,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            tahap.deskripsi,
+            style: const TextStyle(
+              color: HaloMinnaApp.muted,
+              fontSize: 11.5,
+              height: 1.4,
+            ),
+          ),
+
+          const SizedBox(height: 17),
+          const Divider(color: HaloMinnaApp.line),
+          const SizedBox(height: 8),
+
+          Expanded(
+            child: ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              itemCount: tahap.aktivitas.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 13),
+              itemBuilder: (context, index) {
+                final aktivitas = tahap.aktivitas[index];
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF1F8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        aktivitas.icon,
+                        size: 19,
+                        color: HaloMinnaApp.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          aktivitas.judul,
+                          style: const TextStyle(
+                            color: HaloMinnaApp.ink,
+                            fontSize: 12,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class IdentityCard extends StatelessWidget {
   final String nama;
   final String noReg;
@@ -2865,10 +3332,17 @@ class TentangKamiScreen extends StatelessWidget {
           title: 'Halo Minna',
           description: 'Layanan informasi digital untuk memudahkan keluarga WBP memperoleh informasi terkait program integrasi dan pembinaan.',
         ),
-        const InfoListTile(
+        InfoListTile(
           icon: Icons.account_tree_rounded,
           title: 'Alur Program Integrasi',
-          description: 'Informasi tahapan proses program integrasi, mulai dari pengambilan berkas hingga pelaksanaan sesuai ketentuan yang berlaku.',
+          description: 'Informasi tahapan proses program integrasi, mulai dari pengusulan hingga penerbitan SK.',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AlurProgramIntegrasiScreen(),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 12),
         const NoticeCard(
@@ -3095,50 +3569,69 @@ class ProgramCard extends StatelessWidget {
 class InfoListTile extends StatelessWidget {
   final IconData icon;
   final String title, description;
+  final VoidCallback? onTap;
+
   const InfoListTile({
     super.key,
     required this.icon,
     required this.title,
     required this.description,
+    this.onTap,
   });
+
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(15),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(15),
       border: Border.all(color: HaloMinnaApp.line),
     ),
-    child: Row(
-      children: [
-        Icon(icon, color: HaloMinnaApp.blue, size: 22),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Row(
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: HaloMinnaApp.ink,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
+              Icon(icon, color: HaloMinnaApp.blue, size: 22),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: HaloMinnaApp.ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: HaloMinnaApp.muted,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
                   color: HaloMinnaApp.muted,
-                  fontSize: 12,
-                  height: 1.4,
                 ),
-              ),
             ],
           ),
         ),
-      ],
+      ),
     ),
   );
 }
