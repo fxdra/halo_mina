@@ -373,15 +373,15 @@ class _AccessScreenState extends State<AccessScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 15),
               const NoticeCard(
                 icon: Icons.shield_outlined,
                 title: 'Akses informasi yang aman',
-                message: 'Jaga kerahasiaan kode akses dan jangan membagikannya kepada pihak yang tidak berkepentingan.',
+                message: 'Jaga kerahasiaan kode akses. Jangan membagikannya kepada orang lain.',
               ),
               const SizedBox(height: 30),
               const Divider(color: HaloMinnaApp.line),
-              const SizedBox(height: 18),
+              const SizedBox(height: 15),
               const Text(
                 'LAYANAN INFORMASI',
                 textAlign: TextAlign.center,
@@ -608,28 +608,6 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Tombol informasi aplikasi — tetap dipertahankan
-                      IconButton(
-                        onPressed: () => showDialog<void>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Informasi aplikasi'),
-                            content: const Text(
-                              'UI Halo Minna masih dalam tahap pengembangan. Validasi kode akses dan data aktual akan dihubungkan melalui API.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Mengerti'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        icon: const Icon(
-                          Icons.info_outline_rounded,
-                          color: Colors.white,
-                        ),
-                      ),
 
                       // Tombol logout — tambahkan setelah tombol informasi
                       IconButton(
@@ -646,16 +624,6 @@ class DashboardScreen extends StatelessWidget {
                   const Text(
                     'Selamat datang di',
                     style: TextStyle(color: Color(0xFFD2DFEC), fontSize: 13),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'Halo Minna',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 25,
-                      height: 1.18,
-                      fontWeight: FontWeight.w900,
-                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -716,11 +684,7 @@ class DashboardScreen extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Pilih layanan yang ingin dibuka.',
-                    style: TextStyle(color: HaloMinnaApp.muted, fontSize: 13),
-                  ),
+
                   const SizedBox(height: 17),
                   GridView.builder(
                     shrinkWrap: true,
@@ -736,12 +700,7 @@ class DashboardScreen extends StatelessWidget {
                     itemBuilder: (ctx, i) =>
                         MenuCard(menu: menus[i], onTap: () => _open(ctx, i)),
                   ),
-                  const SizedBox(height: 20),
-                  const NoticeCard(
-                    icon: Icons.info_outline_rounded,
-                    title: 'Tahap pengembangan',
-                    message: 'Data pada halaman berikutnya masih berupa rancangan UI. Informasi aktual akan ditampilkan setelah API terhubung.',
-                  ),
+
                   const SizedBox(height: 22),
                   const Center(
                     child: Text(
@@ -1133,45 +1092,161 @@ class AlurProgramIntegrasiScreen extends StatefulWidget {
 class _AlurProgramIntegrasiScreenState
     extends State<AlurProgramIntegrasiScreen> {
   late final PageController _pageController;
-  int _currentPage = 0;
 
-  static const List<AlurTahapData> _tahapan = [
+  int _currentPage = 0;
+  String _programTerpilih = 'Cuti Bersyarat';
+
+  List<AlurTahapData> _buatTahapanStandar(String aktivitasPendataan) {
+    return [
+      AlurTahapData(
+        nomor: 1,
+        instansi: 'UPT',
+        judul: 'Persiapan dan Sidang TPP',
+        icon: Icons.groups_rounded,
+        deskripsi: 'Tahap awal pengusulan program integrasi.',
+        aktivitas: [
+          AlurAktivitas(aktivitasPendataan, Icons.person_search_rounded),
+          AlurAktivitas(
+            'Melengkapi input data dan dokumen',
+            Icons.edit_document,
+          ),
+          AlurAktivitas(
+            'Membuat daftar usulan sidang TPP',
+            Icons.playlist_add_check_rounded,
+          ),
+          AlurAktivitas('Melaksanakan sidang TPP', Icons.gavel_rounded),
+        ],
+      ),
+      AlurTahapData(
+        nomor: 2,
+        instansi: 'KANWIL',
+        judul: 'Verifikasi Hasil Sidang',
+        icon: Icons.fact_check_rounded,
+        deskripsi: 'Pemeriksaan usulan oleh Kantor Wilayah.',
+        aktivitas: [
+          AlurAktivitas(
+            'Melakukan verifikasi hasil sidang TPP',
+            Icons.verified_user_rounded,
+          ),
+          AlurAktivitas(
+            'Jangka waktu maksimal 3 hari sejak usulan diterima dari UPT',
+            Icons.timer_outlined,
+          ),
+        ],
+      ),
+      AlurTahapData(
+        nomor: 3,
+        instansi: 'UPT',
+        judul: 'Verifikasi dan Konsolidasi',
+        icon: Icons.sync_rounded,
+        deskripsi: 'Tindak lanjut hasil verifikasi dari Kanwil.',
+        aktivitas: [
+          AlurAktivitas(
+            'Menerima hasil verifikasi dari Kanwil',
+            Icons.mark_email_read_rounded,
+          ),
+          AlurAktivitas('Kontrol sidang', Icons.rule_rounded),
+          AlurAktivitas(
+            'Verifikasi sidang TPP',
+            Icons.assignment_turned_in_rounded,
+          ),
+          AlurAktivitas(
+            'Upload surat pengantar',
+            Icons.drive_folder_upload_rounded,
+          ),
+          AlurAktivitas(
+            'Kirim terima data dan dokumen (konsolidasi)',
+            Icons.compare_arrows_rounded,
+          ),
+        ],
+      ),
+      AlurTahapData(
+        nomor: 4,
+        instansi: 'DITJEN PAS',
+        judul: 'Persetujuan dan Penerbitan SK',
+        icon: Icons.approval_rounded,
+        deskripsi: 'Proses verifikasi dan persetujuan di tingkat pusat.',
+        aktivitas: [
+          AlurAktivitas(
+            'Melakukan verifikasi usulan',
+            Icons.manage_search_rounded,
+          ),
+          AlurAktivitas('Membuat persetujuan', Icons.task_alt_rounded),
+          AlurAktivitas('Generate SK', Icons.description_rounded),
+        ],
+      ),
+      AlurTahapData(
+        nomor: 5,
+        instansi: 'KANWIL',
+        judul: 'Pencetakan SK',
+        icon: Icons.print_rounded,
+        deskripsi: 'Kantor Wilayah memproses dokumen keputusan.',
+        aktivitas: [AlurAktivitas('Cetak SK', Icons.print_outlined)],
+      ),
+      AlurTahapData(
+        nomor: 6,
+        instansi: 'UPT',
+        judul: 'Penerimaan SK',
+        icon: Icons.inventory_rounded,
+        deskripsi: 'Tahap akhir penerimaan dokumen keputusan.',
+        aktivitas: [
+          AlurAktivitas(
+            'Menerima data dari Pusat',
+            Icons.download_for_offline_rounded,
+          ),
+          AlurAktivitas(
+            'Melaksanakan pencetakan SK',
+            Icons.local_print_shop_rounded,
+          ),
+        ],
+      ),
+    ];
+  }
+
+  static const List<AlurTahapData> _tahapanAsimilasi = [
     AlurTahapData(
       nomor: 1,
       instansi: 'UPT',
       judul: 'Persiapan dan Sidang TPP',
-      icon: Icons.account_balance_rounded,
-      deskripsi: 'Tahap awal pengusulan program integrasi.',
+      icon: Icons.groups_rounded,
+      deskripsi: 'Persiapan dan pengusulan program Asimilasi.',
       aktivitas: [
         AlurAktivitas(
-          'Melakukan pendataan narapidana',
-          Icons.people_outline_rounded,
+          'Melakukan pendaftaran narapidana',
+          Icons.person_search_rounded,
         ),
-        AlurAktivitas(
-          'Melengkapi input data dan dokumen',
-          Icons.description_outlined,
-        ),
+        AlurAktivitas('Melengkapi input data dan dokumen', Icons.edit_document),
         AlurAktivitas(
           'Membuat daftar usulan sidang TPP',
-          Icons.assignment_outlined,
+          Icons.playlist_add_check_rounded,
         ),
-        AlurAktivitas('Melaksanakan sidang TPP', Icons.groups_outlined),
+        AlurAktivitas('Melaksanakan sidang TPP', Icons.gavel_rounded),
+        AlurAktivitas('Kontrol sidang', Icons.rule_rounded),
+        AlurAktivitas('Verifikasi sidang', Icons.assignment_turned_in_rounded),
+        AlurAktivitas(
+          'Upload surat pengantar',
+          Icons.drive_folder_upload_rounded,
+        ),
+        AlurAktivitas(
+          'Kirim/terima data dan dokumen (konsolidasi)',
+          Icons.compare_arrows_rounded,
+        ),
       ],
     ),
     AlurTahapData(
       nomor: 2,
       instansi: 'KANWIL',
-      judul: 'Verifikasi Hasil Sidang',
-      icon: Icons.business_rounded,
+      judul: 'Verifikasi Usulan',
+      icon: Icons.fact_check_rounded,
       deskripsi: 'Pemeriksaan usulan oleh Kantor Wilayah.',
       aktivitas: [
         AlurAktivitas(
-          'Melakukan verifikasi hasil sidang TPP',
-          Icons.fact_check_outlined,
+          'Melakukan verifikasi usulan',
+          Icons.verified_user_rounded,
         ),
         AlurAktivitas(
           'Jangka waktu maksimal 3 hari sejak usulan diterima dari UPT',
-          Icons.schedule_rounded,
+          Icons.timer_outlined,
         ),
       ],
     ),
@@ -1179,19 +1254,25 @@ class _AlurProgramIntegrasiScreenState
       nomor: 3,
       instansi: 'UPT',
       judul: 'Verifikasi dan Konsolidasi',
-      icon: Icons.account_balance_rounded,
+      icon: Icons.sync_rounded,
       deskripsi: 'Tindak lanjut hasil verifikasi dari Kanwil.',
       aktivitas: [
         AlurAktivitas(
-          'Menerima hasil verifikasi dari Kanwil',
-          Icons.inbox_outlined,
+          'Hasil verifikasi diterima dari Kanwil',
+          Icons.mark_email_read_rounded,
         ),
-        AlurAktivitas('Kontrol sidang', Icons.fact_check_outlined),
-        AlurAktivitas('Verifikasi sidang TPP', Icons.verified_outlined),
-        AlurAktivitas('Upload surat pengantar', Icons.cloud_upload_outlined),
+        AlurAktivitas('Kontrol sidang', Icons.rule_rounded),
+        AlurAktivitas(
+          'Verifikasi sidang TPP',
+          Icons.assignment_turned_in_rounded,
+        ),
+        AlurAktivitas(
+          'Upload surat pengantar',
+          Icons.drive_folder_upload_rounded,
+        ),
         AlurAktivitas(
           'Kirim terima data dan dokumen (konsolidasi)',
-          Icons.sync_alt_rounded,
+          Icons.compare_arrows_rounded,
         ),
       ],
     ),
@@ -1199,14 +1280,14 @@ class _AlurProgramIntegrasiScreenState
       nomor: 4,
       instansi: 'DITJEN PAS',
       judul: 'Persetujuan dan Penerbitan SK',
-      icon: Icons.account_balance_rounded,
+      icon: Icons.approval_rounded,
       deskripsi: 'Proses verifikasi dan persetujuan di tingkat pusat.',
       aktivitas: [
-        AlurAktivitas('Melakukan verifikasi usulan', Icons.fact_check_outlined),
         AlurAktivitas(
-          'Membuat persetujuan',
-          Icons.check_circle_outline_rounded,
+          'Melakukan verifikasi usulan',
+          Icons.manage_search_rounded,
         ),
+        AlurAktivitas('Membuat persetujuan', Icons.task_alt_rounded),
         AlurAktivitas('Generate SK', Icons.description_rounded),
       ],
     ),
@@ -1214,22 +1295,38 @@ class _AlurProgramIntegrasiScreenState
       nomor: 5,
       instansi: 'KANWIL',
       judul: 'Pencetakan SK',
-      icon: Icons.business_rounded,
+      icon: Icons.print_rounded,
       deskripsi: 'Kantor Wilayah memproses dokumen keputusan.',
-      aktivitas: [AlurAktivitas('Cetak SK', Icons.print_rounded)],
-    ),
-    AlurTahapData(
-      nomor: 6,
-      instansi: 'UPT',
-      judul: 'Penerimaan SK',
-      icon: Icons.account_balance_rounded,
-      deskripsi: 'Tahap akhir penerimaan dokumen keputusan.',
-      aktivitas: [
-        AlurAktivitas('Menerima data dari Pusat', Icons.download_done_rounded),
-        AlurAktivitas('Melaksanakan pencetakan SK', Icons.print_rounded),
-      ],
+      aktivitas: [AlurAktivitas('Cetak SK', Icons.print_outlined)],
     ),
   ];
+
+  List<AlurTahapData> get _tahapan {
+    switch (_programTerpilih) {
+      case 'Cuti Bersyarat':
+        return _buatTahapanStandar('Melakukan pendaftaran narapidana');
+
+      case 'Pembebasan Bersyarat':
+        return _buatTahapanStandar('Melakukan pendataan narapidana');
+
+      case 'Asimilasi':
+        return _tahapanAsimilasi;
+
+      default:
+        return [];
+    }
+  }
+
+  void _pilihProgram(String program) {
+    if (_programTerpilih == program) return;
+
+    setState(() {
+      _programTerpilih = program;
+      _currentPage = 0;
+    });
+
+    _pageController.jumpToPage(0);
+  }
 
   @override
   void initState() {
@@ -1253,6 +1350,8 @@ class _AlurProgramIntegrasiScreenState
 
   @override
   Widget build(BuildContext context) {
+    final tahapan = _tahapan;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Alur Program Integrasi')),
       body: ListView(
@@ -1274,7 +1373,7 @@ class _AlurProgramIntegrasiScreenState
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Alur Program Integrasi',
+                  'Tahapan Pengusulan',
                   style: TextStyle(
                     color: HaloMinnaApp.navy,
                     fontSize: 23,
@@ -1283,8 +1382,7 @@ class _AlurProgramIntegrasiScreenState
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Pelajari tahapan proses pengusulan program '
-                  'integrasi mulai dari UPT hingga penerimaan SK.',
+                  'Pelajari tahapan pengusulan hingga penerbitan SK.',
                   style: TextStyle(
                     color: HaloMinnaApp.muted,
                     fontSize: 13,
@@ -1292,28 +1390,45 @@ class _AlurProgramIntegrasiScreenState
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // PEMILIHAN PROGRAM
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _pilihanProgram('Cuti Bersyarat'),
+                    _pilihanProgram('Pembebasan Bersyarat'),
+                    _pilihanProgram('Asimilasi'),
+                  ],
+                ),
+
+                const SizedBox(height: 13),
+
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEAF1F8),
                     borderRadius: BorderRadius.circular(13),
                   ),
-                  child: const Row(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.swipe_rounded,
+                      const Icon(
+                        Icons.info_outline_rounded,
                         color: HaloMinnaApp.navy,
                         size: 22,
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Geser ke kiri atau kanan untuk melihat '
-                          'tahapan berikutnya.',
-                          style: TextStyle(
+                          _programTerpilih == 'Asimilasi'
+                              ? 'Dasar hukum: Permenham Nomor 03 Tahun 2018.'
+                              : 'Dasar hukum: Permenkumham Nomor 7 Tahun 2022.',
+                          style: const TextStyle(
                             color: HaloMinnaApp.navy,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
+                            height: 1.5,
                           ),
                         ),
                       ),
@@ -1323,13 +1438,15 @@ class _AlurProgramIntegrasiScreenState
               ],
             ),
           ),
-          const SizedBox(height: 22),
+
+          const SizedBox(height: 20),
 
           SizedBox(
-            height: 510,
+            height: 460,
             child: PageView.builder(
+              key: ValueKey(_programTerpilih),
               controller: _pageController,
-              itemCount: _tahapan.length,
+              itemCount: tahapan.length,
               onPageChanged: (index) {
                 setState(() => _currentPage = index);
               },
@@ -1337,7 +1454,7 @@ class _AlurProgramIntegrasiScreenState
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 7),
                   child: _AlurTahapCard(
-                    tahap: _tahapan[index],
+                    tahap: tahapan[index],
                     aktif: _currentPage == index,
                   ),
                 );
@@ -1350,7 +1467,7 @@ class _AlurProgramIntegrasiScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
-              _tahapan.length,
+              tahapan.length,
               (index) => GestureDetector(
                 onTap: () => _pindahTahap(index),
                 child: AnimatedContainer(
@@ -1368,21 +1485,32 @@ class _AlurProgramIntegrasiScreenState
               ),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          Center(
-            child: Text(
-              'Tahap ${_currentPage + 1} dari ${_tahapan.length}',
-              style: const TextStyle(
-                color: HaloMinnaApp.muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _pilihanProgram(String program) {
+    final aktif = _programTerpilih == program;
+
+    return ChoiceChip(
+      label: Text(program),
+      selected: aktif,
+      onSelected: (_) => _pilihProgram(program),
+      selectedColor: HaloMinnaApp.navy,
+      backgroundColor: const Color(0xFFEAF1F8),
+      labelStyle: TextStyle(
+        color: aktif ? Colors.white : HaloMinnaApp.navy,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: aktif ? HaloMinnaApp.navy : const Color(0xFFCBD5E1),
+        ),
+      ),
+      showCheckmark: false,
     );
   }
 }
@@ -1464,15 +1592,6 @@ class _AlurTahapCard extends StatelessWidget {
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${tahap.nomor} / 6',
-                style: const TextStyle(
-                  color: HaloMinnaApp.muted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -2306,7 +2425,7 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${programs.length} catatan program pembinaan',
+                      'Mengikuti ${programs.length} program pembinaan',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 16),
@@ -2343,13 +2462,6 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
                         (item) => _buildProgramCard(context, item),
                       ),
                     ],
-
-                    const SizedBox(height: 18),
-                    const NoticeCard(
-                      icon: Icons.info_outline_rounded,
-                      title: 'Informasi pembinaan',
-                      message: 'Status dan indikator keaktifan mengikuti catatan yang dikelola petugas melalui sistem pembinaan.',
-                    ),
                   ],
                 );
               },
@@ -2904,10 +3016,10 @@ class _StatistikScreenState extends State<StatistikScreen> {
               icon: Icons.info_outline_rounded,
               title: 'Informasi Statistik',
               message:
-                  'Data statistik integrasi menunjukkan jumlah WBP '
-                  'berdasarkan tahapan terakhir yang tercatat. '
-                  'Statistik pembinaan menunjukkan jumlah WBP '
-                  'yang mengikuti setiap program pembinaan.',
+                  'Statistik Program Integrasi menampilkan jumlah WBP '
+                  'berdasarkan tahapan terakhir proses integrasi yang tercatat. '
+                  'Sementara itu, Statistik Pembinaan menampilkan jumlah WBP '
+                  'yang mengikuti masing-masing program pembinaan.',
             ),
           ],
         ),
@@ -3117,40 +3229,30 @@ class KritikSaranScreen extends StatefulWidget {
 class _KritikSaranScreenState extends State<KritikSaranScreen> {
   final _formKey = GlobalKey<FormState>();
   final _message = TextEditingController();
+  final _pertanyaan = TextEditingController();
 
   String _type = 'Saran';
 
   // GANTI dengan nomor WhatsApp Admin Bimkemaswat.
   // Format: kode negara + nomor, tanpa tanda +.
-  static const String _adminWhatsApp = '62XXXXXXXXXX';
+  static const String _adminWhatsApp = '6282128000497';
 
   @override
   void dispose() {
     _message.dispose();
+    _pertanyaan.dispose();
     super.dispose();
   }
 
-  Future<void> _kirimWhatsApp() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final pesan =
-        '''
-Assalamu'alaikum Admin Bimkemaswat.
-
-Saya ingin menyampaikan $_type melalui aplikasi Halo Minna.
-
-Pesan:
-${_message.text.trim()}
-
-Terima kasih.
-''';
-
+  Future<void> _bukaWhatsApp(String pesan) async {
     final nomor = _adminWhatsApp;
 
-    if (nomor.contains('X') || nomor.isEmpty) {
+    if (!RegExp(r'^62[0-9]{8,13}$').hasMatch(nomor)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nomor WhatsApp Admin belum dikonfigurasi.'),
+          content: Text(
+            'Nomor WhatsApp Admin belum dikonfigurasi dengan benar.',
+          ),
         ),
       );
       return;
@@ -3180,23 +3282,61 @@ Terima kasih.
     }
   }
 
+  Future<void> _kirimKritikSaran() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final pesan =
+        '''
+Assalamu'alaikum Admin Bimkemaswat.
+
+Saya ingin menyampaikan $_type melalui aplikasi Halo Minna.
+
+Pesan:
+${_message.text.trim()}
+
+Terima kasih.
+''';
+
+    await _bukaWhatsApp(pesan);
+  }
+
+  Future<void> _tanyaMinna() async {
+    final pertanyaan = _pertanyaan.text.trim();
+
+    if (pertanyaan.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pertanyaan belum diisi.')));
+      return;
+    }
+
+    final pesan =
+        '''
+Assalamu'alaikum Admin Bimkemaswat.
+
+Saya ingin bertanya melalui aplikasi Halo Minna.
+
+Pertanyaan:
+$pertanyaan
+
+Terima kasih.
+''';
+
+    await _bukaWhatsApp(pesan);
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Kritik & Saran')),
+    appBar: AppBar(title: const Text('Pusat Bantuan')),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
       children: [
         const SectionIntro(
-          eyebrow: 'SUARA PENGGUNA',
-          title: 'Kritik & Saran',
-          subtitle: 'Sampaikan masukan untuk membantu meningkatkan kualitas layanan Halo Minna.',
+          eyebrow: 'PUSAT BANTUAN',
+          title: 'Ada yang bisa kami bantu?',
+          subtitle: 'Sampaikan masukan atau tanyakan informasi seputar layanan Halo Minna.',
         ),
         const SizedBox(height: 20),
-        const FeatureBanner(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: 'Terhubung dengan Admin',
-          body: 'Kritik dan saran akan diteruskan melalui WhatsApp Admin Bimkemaswat.',
-        ),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(18),
@@ -3210,6 +3350,30 @@ Terima kasih.
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const Row(
+                  children: [
+                    Icon(Icons.message_outlined, color: HaloMinnaApp.navy),
+                    SizedBox(width: 9),
+                    Text(
+                      'Kritik & Saran',
+                      style: TextStyle(
+                        color: HaloMinnaApp.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sampaikan masukan untuk meningkatkan kualitas layanan.',
+                  style: TextStyle(
+                    color: HaloMinnaApp.muted,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 18),
                 const Text(
                   'Jenis masukan',
                   style: TextStyle(
@@ -3254,7 +3418,7 @@ Terima kasih.
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
-                  onPressed: _kirimWhatsApp,
+                  onPressed: _kirimKritikSaran,
                   icon: const Icon(Icons.chat_rounded),
                   label: const Text('Lanjutkan ke WhatsApp'),
                   style: FilledButton.styleFrom(
@@ -3264,6 +3428,69 @@ Terima kasih.
                 ),
               ],
             ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: HaloMinnaApp.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Row(
+                children: [
+                  Icon(
+                    Icons.question_answer_outlined,
+                    color: HaloMinnaApp.navy,
+                  ),
+                  SizedBox(width: 9),
+                  Text(
+                    'Tanya Minna',
+                    style: TextStyle(
+                      color: HaloMinnaApp.ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Butuh informasi seputar program integrasi atau layanan pemasyarakatan? Sampaikan pertanyaan Anda.',
+                style: TextStyle(
+                  color: HaloMinnaApp.muted,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _pertanyaan,
+                minLines: 3,
+                maxLines: 5,
+                maxLength: 1000,
+                decoration: const InputDecoration(
+                  labelText: 'Pertanyaan',
+                  hintText: 'Apa yang ingin Anda tanyakan?',
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _tanyaMinna,
+                icon: const Icon(Icons.chat_rounded),
+                label: const Text('Tanyakan ke Admin'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: HaloMinnaApp.navy,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -3343,12 +3570,6 @@ class TentangKamiScreen extends StatelessWidget {
               ),
             );
           },
-        ),
-        const SizedBox(height: 12),
-        const NoticeCard(
-          icon: Icons.info_outline_rounded,
-          title: 'Informasi institusi',
-          message: 'Rincian kontak, alamat, dan informasi resmi lainnya dapat dilengkapi setelah disepakati dan diverifikasi.',
         ),
       ],
     ),
