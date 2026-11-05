@@ -4,7 +4,19 @@ import 'services/halo_minna_api.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
-void main() => runApp(const HaloMinnaApp());
+import 'theme_manager.dart';
+
+import 'app_theme.dart';
+
+final themeManager = ThemeManager();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await themeManager.loadTheme();
+
+  runApp(const HaloMinnaApp());
+}
 
 class HaloMinnaApp extends StatelessWidget {
   const HaloMinnaApp({super.key});
@@ -18,48 +30,21 @@ class HaloMinnaApp extends StatelessWidget {
   static const line = Color(0xFFE2E8F0);
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Halo Minna',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: canvas,
-      colorScheme: ColorScheme.fromSeed(seedColor: navy)
-          .copyWith(primary: navy, secondary: gold, surface: Colors.white),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: navy,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleTextStyle: TextStyle(
-          color: navy,
-          fontSize: 19,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: line),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: line),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: navy, width: 1.5),
-        ),
-      ),
-    ),
-    home: const SplashScreen(),
-  );
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: themeManager,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Halo Minna',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: themeManager.themeMode,
+          home: const SplashScreen(),
+        );
+      },
+    );
+  }
 }
 
 class SplashScreen extends StatefulWidget {
@@ -216,22 +201,21 @@ class _AccessScreenState extends State<AccessScreen> {
             children: [
               const InstitutionLogos(size: 76),
               const SizedBox(height: 26),
-              const Text(
+              Text(
                 'Informasi Integrasi\nWarga Binaan',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: HaloMinnaApp.navy,
+                  color: Theme.of(context).colorScheme.primary,
                   fontSize: 26,
                   height: 1.2,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Pantau informasi program integrasi melalui satu akses yang mudah dan resmi.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: HaloMinnaApp.muted,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
                   fontSize: 14,
                 ),
@@ -240,42 +224,45 @@ class _AccessScreenState extends State<AccessScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: HaloMinnaApp.line),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x090B2D50),
-                      blurRadius: 24,
-                      offset: Offset(0, 8),
-                    ),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  boxShadow: [
+                    if (Theme.of(context).brightness == Brightness.light)
+                      const BoxShadow(
+                        color: Color(0x090B2D50),
+                        blurRadius: 24,
+                        offset: Offset(0, 8),
+                      ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(
                           Icons.lock_outline_rounded,
-                          color: HaloMinnaApp.navy,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                        SizedBox(width: 9),
+                        const SizedBox(width: 9),
                         Text(
                           'Masuk dengan Kode Akses',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: HaloMinnaApp.ink,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Gunakan kode akses yang diberikan oleh petugas.',
                       style: TextStyle(
-                        color: HaloMinnaApp.muted,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12.5,
                         height: 1.45,
                       ),
@@ -289,15 +276,23 @@ class _AccessScreenState extends State<AccessScreen> {
                           alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEAF1F8),
-                            border: Border.all(color: const Color(0xFFD5DFEA)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer,
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
+                          child: Text(
                             'BNCY-',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: HaloMinnaApp.navy,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                               fontSize: 15,
                               letterSpacing: 0.5,
                             ),
@@ -346,12 +341,14 @@ class _AccessScreenState extends State<AccessScreen> {
                       child: FilledButton.icon(
                         onPressed: _loading ? null : _continue,
                         icon: _loading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary,
                                 ),
                               )
                             : const Icon(Icons.arrow_forward_rounded, size: 19),
@@ -363,7 +360,12 @@ class _AccessScreenState extends State<AccessScreen> {
                           ),
                         ),
                         style: FilledButton.styleFrom(
-                          backgroundColor: HaloMinnaApp.navy,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary,
+                          foregroundColor: Theme.of(context)
+                              .colorScheme
+                              .onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -379,14 +381,13 @@ class _AccessScreenState extends State<AccessScreen> {
                 title: 'Akses informasi yang aman',
                 message: 'Jaga kerahasiaan kode akses. Jangan membagikannya kepada orang lain.',
               ),
-              const SizedBox(height: 30),
-              const Divider(color: HaloMinnaApp.line),
+
               const SizedBox(height: 15),
-              const Text(
+              Text(
                 'LAYANAN INFORMASI',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: HaloMinnaApp.muted,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 10,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w800,
@@ -401,11 +402,11 @@ class _AccessScreenState extends State<AccessScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Lapas Banceuy Bandung',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: HaloMinnaApp.navy,
+                  color: Theme.of(context).colorScheme.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
@@ -420,6 +421,48 @@ class _AccessScreenState extends State<AccessScreen> {
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
+
+  Future<void> _showThemeDialog(BuildContext context) async {
+    final selectedMode = await showDialog<ThemeMode>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Pengaturan Tampilan'),
+        children: [
+          RadioGroup<ThemeMode>(
+            groupValue: themeManager.themeMode,
+            onChanged: (mode) {
+              if (mode != null) {
+                Navigator.pop(dialogContext, mode);
+              }
+            },
+            child: Column(
+              children: const [
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.system,
+                  title: Text('System Default'),
+                  subtitle: Text('Mengikuti tema perangkat'),
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.light,
+                  title: Text('Light Mode'),
+                  subtitle: Text('Tampilan terang'),
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.dark,
+                  title: Text('Dark Mode'),
+                  subtitle: Text('Tampilan gelap'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedMode != null) {
+      await themeManager.setThemeMode(selectedMode);
+    }
+  }
 
   Future<void> _logout(BuildContext context) async {
     final konfirmasi = await showDialog<bool>(
@@ -609,7 +652,17 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Tombol logout — tambahkan setelah tombol informasi
+                      // Tombol pengaturan tema
+                      IconButton(
+                        tooltip: 'Pengaturan tampilan',
+                        onPressed: () => _showThemeDialog(context),
+                        icon: const Icon(
+                          Icons.palette_outlined,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      // Tombol logout
                       IconButton(
                         tooltip: 'Keluar',
                         onPressed: () => _logout(context),
@@ -676,10 +729,10 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Menu Layanan',
                     style: TextStyle(
-                      color: HaloMinnaApp.ink,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 19,
                       fontWeight: FontWeight.w900,
                     ),
@@ -702,11 +755,11 @@ class DashboardScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 22),
-                  const Center(
+                  Center(
                     child: Text(
                       'LAPAS BANCEUY BANDUNG',
                       style: TextStyle(
-                        color: HaloMinnaApp.muted,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.2,
@@ -734,85 +787,97 @@ class MenuCard extends StatelessWidget {
   final MenuData menu;
   final VoidCallback onTap;
   const MenuCard({super.key, required this.menu, required this.onTap});
+
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(19),
-    child: InkWell(
-      onTap: onTap,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colors = theme.colorScheme;
+
+    return Material(
+      color: colors.surface,
       borderRadius: BorderRadius.circular(19),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: HaloMinnaApp.line),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x050B2D50),
-              blurRadius: 14,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: menu.tint,
-                borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(19),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(color: colors.outlineVariant),
+            boxShadow: [
+              if (!isDark)
+                const BoxShadow(
+                  color: Color(0x050B2D50),
+                  blurRadius: 14,
+                  offset: Offset(0, 5),
+                ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: isDark ? colors.primaryContainer : menu.tint,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  menu.icon,
+                  color: isDark ? colors.onPrimaryContainer : HaloMinnaApp.navy,
+                  size: 24,
+                ),
               ),
-              child: Icon(menu.icon, color: HaloMinnaApp.navy, size: 24),
-            ),
-            const Spacer(),
-            Text(
-              menu.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: HaloMinnaApp.ink,
-                fontSize: 13.5,
-                height: 1.2,
-                fontWeight: FontWeight.w900,
+              const Spacer(),
+              Text(
+                menu.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontSize: 13.5,
+                  height: 1.2,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              menu.subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: HaloMinnaApp.muted,
-                fontSize: 11,
-                height: 1.35,
+              const SizedBox(height: 6),
+              Text(
+                menu.subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 11,
+                  height: 1.35,
+                ),
               ),
-            ),
-            const SizedBox(height: 9),
-            const Row(
-              children: [
-                Text(
-                  'Buka menu',
-                  style: TextStyle(
-                    color: HaloMinnaApp.blue,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
+              const SizedBox(height: 9),
+              Row(
+                children: [
+                  Text(
+                    'Buka menu',
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 13,
-                  color: HaloMinnaApp.blue,
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 13,
+                    color: colors.primary,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class StatusProgramScreen extends StatefulWidget {
@@ -910,25 +975,27 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.cloud_off_outlined,
-                  size: 48,
-                  color: HaloMinnaApp.muted,
+                  size: 36,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Data belum dapat dimuat',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: HaloMinnaApp.ink,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _error ?? 'Terjadi kesalahan saat mengambil data.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: HaloMinnaApp.muted),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
@@ -1028,19 +1095,19 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
             masa23: _tanggal(profil['masa_2_3']),
           ),
           const SizedBox(height: 25),
-          const Text(
+          Text(
             'Tahapan Program',
             style: TextStyle(
-              color: HaloMinnaApp.ink,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Tanggal mengikuti data yang tersedia dari sistem.',
             style: TextStyle(
-              color: HaloMinnaApp.muted,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 12.5,
               height: 1.4,
             ),
@@ -1337,6 +1404,8 @@ class _AlurProgramIntegrasiScreenState
   Widget build(BuildContext context) {
     final tahapan = _tahapan;
 
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Alur Program Integrasi')),
       body: ListView(
@@ -1347,13 +1416,31 @@ class _AlurProgramIntegrasiScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'PROSEDUR PENGUSULAN',
                   style: TextStyle(
-                    color: HaloMinnaApp.blue,
+                    color: colors.primary,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tahapan Pengusulan',
+                  style: TextStyle(
+                    color: colors.onSurface,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Pelajari tahapan pengusulan hingga penerbitan SK.',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 13,
+                    height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1392,15 +1479,16 @@ class _AlurProgramIntegrasiScreenState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEAF1F8),
+                    color: colors.primaryContainer,
                     borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: colors.outlineVariant),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline_rounded,
-                        color: HaloMinnaApp.navy,
+                        color: colors.onPrimaryContainer,
                         size: 22,
                       ),
                       const SizedBox(width: 10),
@@ -1409,8 +1497,8 @@ class _AlurProgramIntegrasiScreenState
                           _programTerpilih == 'Asimilasi'
                               ? 'Dasar hukum: Permenham Nomor 03 Tahun 2018.'
                               : 'Dasar hukum: Permenkumham Nomor 7 Tahun 2022.',
-                          style: const TextStyle(
-                            color: HaloMinnaApp.navy,
+                          style: TextStyle(
+                            color: colors.onPrimaryContainer,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             height: 1.5,
@@ -1463,7 +1551,7 @@ class _AlurProgramIntegrasiScreenState
                   decoration: BoxDecoration(
                     color: _currentPage == index
                         ? HaloMinnaApp.gold
-                        : const Color(0xFFCBD5E1),
+                        : colors.outlineVariant,
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
@@ -1476,24 +1564,23 @@ class _AlurProgramIntegrasiScreenState
   }
 
   Widget _pilihanProgram(String program) {
+    final colors = Theme.of(context).colorScheme;
     final aktif = _programTerpilih == program;
 
     return ChoiceChip(
       label: Text(program),
       selected: aktif,
       onSelected: (_) => _pilihProgram(program),
-      selectedColor: HaloMinnaApp.navy,
-      backgroundColor: const Color(0xFFEAF1F8),
+      selectedColor: colors.primary,
+      backgroundColor: colors.surface,
       labelStyle: TextStyle(
-        color: aktif ? Colors.white : HaloMinnaApp.navy,
+        color: aktif ? colors.onPrimary : colors.onSurface,
         fontSize: 11,
         fontWeight: FontWeight.w800,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: aktif ? HaloMinnaApp.navy : const Color(0xFFCBD5E1),
-        ),
+        side: BorderSide(color: aktif ? colors.primary : colors.outlineVariant),
       ),
       showCheckmark: false,
     );
@@ -1533,25 +1620,37 @@ class _AlurTahapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardGradient = LinearGradient(
+      colors: isDark
+          ? [
+              colors.surface,
+              aktif ? const Color(0xFF1B3048) : const Color(0xFF101F30),
+            ]
+          : aktif
+          ? [Colors.white, const Color(0xFFF0F5FC)]
+          : [Colors.white, const Color(0xFFF7F9FC)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       padding: const EdgeInsets.all(19),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: aktif
-              ? [Colors.white, const Color(0xFFF0F5FC)]
-              : [Colors.white, const Color(0xFFF7F9FC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: cardGradient,
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
-          color: aktif ? HaloMinnaApp.gold : HaloMinnaApp.line,
+          color: aktif ? HaloMinnaApp.gold : colors.outlineVariant,
           width: aktif ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: HaloMinnaApp.navy.withValues(alpha: aktif ? 0.12 : 0.05),
+            color: Colors.black.withValues(
+              alpha: isDark ? (aktif ? 0.20 : 0.10) : (aktif ? 0.12 : 0.05),
+            ),
             blurRadius: aktif ? 18 : 10,
             offset: const Offset(0, 6),
           ),
@@ -1567,13 +1666,13 @@ class _AlurTahapCard extends StatelessWidget {
                 height: 43,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: aktif ? HaloMinnaApp.gold : HaloMinnaApp.navy,
+                  color: aktif ? HaloMinnaApp.gold : colors.primary,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Text(
                   tahap.nomor.toString().padLeft(2, '0'),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: aktif ? const Color(0xFF071E35) : colors.onPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1588,11 +1687,17 @@ class _AlurTahapCard extends StatelessWidget {
             child: Container(
               width: 88,
               height: 88,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFF1D6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF493A1D)
+                    : const Color(0xFFFFF1D6),
                 shape: BoxShape.circle,
               ),
-              child: Icon(tahap.icon, size: 45, color: HaloMinnaApp.navy),
+              child: Icon(
+                tahap.icon,
+                size: 45,
+                color: isDark ? const Color(0xFFFFD580) : HaloMinnaApp.navy,
+              ),
             ),
           ),
 
@@ -1602,13 +1707,13 @@ class _AlurTahapCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
               decoration: BoxDecoration(
-                color: HaloMinnaApp.navy,
+                color: colors.primary,
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Text(
                 tahap.instansi,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colors.onPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1,
@@ -1621,8 +1726,8 @@ class _AlurTahapCard extends StatelessWidget {
 
           Text(
             tahap.judul,
-            style: const TextStyle(
-              color: HaloMinnaApp.ink,
+            style: TextStyle(
+              color: colors.onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
@@ -1632,15 +1737,15 @@ class _AlurTahapCard extends StatelessWidget {
 
           Text(
             tahap.deskripsi,
-            style: const TextStyle(
-              color: HaloMinnaApp.muted,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
               fontSize: 11.5,
               height: 1.4,
             ),
           ),
 
           const SizedBox(height: 17),
-          const Divider(color: HaloMinnaApp.line),
+          Divider(color: colors.outlineVariant),
           const SizedBox(height: 8),
 
           Expanded(
@@ -1658,13 +1763,13 @@ class _AlurTahapCard extends StatelessWidget {
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEAF1F8),
+                        color: colors.primaryContainer,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         aktivitas.icon,
                         size: 19,
-                        color: HaloMinnaApp.blue,
+                        color: colors.onPrimaryContainer,
                       ),
                     ),
                     const SizedBox(width: 11),
@@ -1673,8 +1778,8 @@ class _AlurTahapCard extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 3),
                         child: Text(
                           aktivitas.judul,
-                          style: const TextStyle(
-                            color: HaloMinnaApp.ink,
+                          style: TextStyle(
+                            color: colors.onSurface,
                             fontSize: 12,
                             height: 1.4,
                             fontWeight: FontWeight.w600,
@@ -1700,62 +1805,70 @@ class IdentityCard extends StatelessWidget {
   const IdentityCard({super.key, required this.nama, required this.noReg});
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(17),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: HaloMinnaApp.line),
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF1F8),
-            borderRadius: BorderRadius.circular(16),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: isDark ? colors.primaryContainer : const Color(0xFFEAF1F8),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.person_outline_rounded,
+              color: isDark ? colors.onPrimaryContainer : colors.primary,
+              size: 29,
+            ),
           ),
-          child: const Icon(
-            Icons.person_outline_rounded,
-            color: HaloMinnaApp.navy,
-            size: 29,
-          ),
-        ),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'NAMA WBP',
-                style: TextStyle(
-                  color: HaloMinnaApp.muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: .8,
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NAMA WBP',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .8,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                nama,
-                style: const TextStyle(
-                  color: HaloMinnaApp.ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
+                const SizedBox(height: 4),
+                Text(
+                  nama,
+                  style: TextStyle(
+                    color: colors.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                'No. Registrasi: $noReg',
-                style: const TextStyle(color: HaloMinnaApp.muted, fontSize: 12),
-              ),
-            ],
+                const SizedBox(height: 5),
+                Text(
+                  'No. Registrasi: $noReg',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class ProgramStatusCard extends StatelessWidget {
@@ -1850,6 +1963,7 @@ class StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String status = label.toLowerCase().trim();
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color backgroundColor;
     final Color textColor;
@@ -1857,26 +1971,34 @@ class StatusPill extends StatelessWidget {
 
     switch (status) {
       case 'aktif':
-        backgroundColor = const Color(0xFFDDF5E5);
-        textColor = const Color(0xFF23834D);
+        backgroundColor = isDark
+            ? const Color(0xFF173D2B)
+            : const Color(0xFFDDF5E5);
+        textColor = isDark ? const Color(0xFF8BE0AA) : const Color(0xFF23834D);
         description = 'Program integrasi sedang berjalan.';
         break;
 
       case 'batal':
-        backgroundColor = const Color(0xFFFFE0E0);
-        textColor = const Color(0xFFD64B4B);
+        backgroundColor = isDark
+            ? const Color(0xFF492525)
+            : const Color(0xFFFFE0E0);
+        textColor = isDark ? const Color(0xFFFFA0A0) : const Color(0xFFD64B4B);
         description = 'Program integrasi telah dibatalkan. Tanya Minna untuk informasi lebih lanjut.';
         break;
 
       case 'tidak aktif':
-        backgroundColor = const Color(0xFFFFF0CE);
-        textColor = const Color(0xFF815B12);
+        backgroundColor = isDark
+            ? const Color(0xFF493A1D)
+            : const Color(0xFFFFF0CE);
+        textColor = isDark ? const Color(0xFFFFD580) : const Color(0xFF815B12);
         description = 'WBP belum masuk tahap pengusulan program integrasi.';
         break;
 
       default:
-        backgroundColor = const Color(0xFFE8EDF3);
-        textColor = const Color(0xFF526174);
+        backgroundColor = isDark
+            ? const Color(0xFF29394B)
+            : const Color(0xFFE8EDF3);
+        textColor = isDark ? const Color(0xFFCAD5E2) : const Color(0xFF526174);
         description = 'Informasi untuk status ini belum tersedia.';
     }
 
@@ -2046,9 +2168,20 @@ class TimelineRow extends StatelessWidget {
         tanggal != null &&
         !DateTime(tanggal.year, tanggal.month, tanggal.day).isAfter(hariIni);
 
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final Color warnaStatus = done
-        ? const Color(0xFF2D8A58)
-        : const Color(0xFF9AA8B7);
+        ? (isDark ? const Color(0xFF75D69A) : const Color(0xFF2D8A58))
+        : colors.onSurfaceVariant;
+
+    final Color iconBackground = done
+        ? (isDark ? const Color(0xFF173D2B) : const Color(0xFFE0F2E8))
+        : colors.surface;
+
+    final Color iconForeground = done
+        ? (isDark ? const Color(0xFF8BE0AA) : const Color(0xFF237348))
+        : colors.onSurfaceVariant;
 
     return IntrinsicHeight(
       child: Row(
@@ -2062,21 +2195,17 @@ class TimelineRow extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: done ? const Color(0xFFE0F2E8) : Colors.white,
+                    color: iconBackground,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: done ? const Color(0xFF6DB88A) : HaloMinnaApp.line,
+                      color: done ? warnaStatus : colors.outlineVariant,
                     ),
                   ),
-                  child: Icon(
-                    data.icon,
-                    size: 17,
-                    color: done ? const Color(0xFF237348) : HaloMinnaApp.muted,
-                  ),
+                  child: Icon(data.icon, size: 17, color: iconForeground),
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 1.5, color: HaloMinnaApp.line),
+                    child: Container(width: 1.5, color: colors.outlineVariant),
                   ),
               ],
             ),
@@ -2087,9 +2216,9 @@ class TimelineRow extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: HaloMinnaApp.line),
+                border: Border.all(color: colors.outlineVariant),
               ),
               child: Row(
                 children: [
@@ -2099,8 +2228,8 @@ class TimelineRow extends StatelessWidget {
                       children: [
                         Text(
                           data.title,
-                          style: const TextStyle(
-                            color: HaloMinnaApp.ink,
+                          style: TextStyle(
+                            color: colors.onSurface,
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                           ),
@@ -2108,8 +2237,8 @@ class TimelineRow extends StatelessWidget {
                         const SizedBox(height: 5),
                         Text(
                           data.date,
-                          style: const TextStyle(
-                            color: HaloMinnaApp.muted,
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
                             fontSize: 11.5,
                           ),
                         ),
@@ -2205,14 +2334,18 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
     return '$day-$month-${parsed.year}';
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(String status, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     switch (status) {
       case 'Aktif':
-        return Colors.green;
+        return isDark ? const Color(0xFF75D69A) : const Color(0xFF23834D);
+
       case 'Selesai':
-        return Colors.blue;
+        return isDark ? const Color(0xFF8BB9E5) : const Color(0xFF2563A6);
+
       default:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -2224,6 +2357,9 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
 
     final tanggalMulai = _formatTanggal(program['tanggal_mulai']);
 
+    final colors = Theme.of(context).colorScheme;
+    final statusColor = _statusColor(status, context);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -2234,7 +2370,7 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(_iconProgram(nama), size: 28),
+                Icon(_iconProgram(nama), size: 28, color: colors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -2245,7 +2381,11 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 4),
-                      Text(kategori),
+                      Text(
+                        kategori,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(color: colors.onSurfaceVariant),
+                      ),
                     ],
                   ),
                 ),
@@ -2256,13 +2396,13 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: _statusColor(status).withValues(alpha: 0.12),
+                    color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     status,
                     style: TextStyle(
-                      color: _statusColor(status),
+                      color: statusColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2342,7 +2482,11 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Column(
                       children: [
-                        const Icon(Icons.cloud_off_outlined, size: 42),
+                        Icon(
+                          Icons.cloud_off_outlined,
+                          size: 42,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'Data program pembinaan belum dapat dimuat.',
@@ -2375,13 +2519,17 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
                     .toList();
 
                 if (programs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Column(
                       children: [
-                        Icon(Icons.menu_book_outlined, size: 42),
-                        SizedBox(height: 12),
-                        Text(
+                        Icon(
+                          Icons.menu_book_outlined,
+                          size: 42,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
                           'Belum ada program pembinaan yang tercatat diikuti.',
                           textAlign: TextAlign.center,
                         ),
@@ -2472,57 +2620,67 @@ class _ProgramDropdown extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(18),
-    clipBehavior: Clip.antiAlias,
-    child: Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE3EAF2)),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          leading: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF1F8),
-              borderRadius: BorderRadius.circular(13),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colors.surface,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: colors.outlineVariant),
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
             ),
-            child: Icon(icon, color: HaloMinnaApp.navy),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              color: HaloMinnaApp.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            leading: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: colors.primaryContainer,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: colors.onPrimaryContainer),
             ),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: Text(
-              subtitle,
-              style: const TextStyle(color: Color(0xFF718096), fontSize: 12),
+            title: Text(
+              title,
+              style: TextStyle(
+                color: colors.onSurface,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
             ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text(
+                subtitle,
+                style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+              ),
+            ),
+            trailing: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: colors.onSurfaceVariant,
+            ),
+            children: programs
+                .map(
+                  (program) => Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: program,
+                  ),
+                )
+                .toList(),
           ),
-          trailing: const Icon(Icons.keyboard_arrow_down_rounded),
-          children: programs
-              .map(
-                (program) => Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: program,
-                ),
-              )
-              .toList(),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class DaftarProgramScreen extends StatefulWidget {
@@ -2664,7 +2822,11 @@ class _DaftarProgramScreenState extends State<DaftarProgramScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Column(
                       children: [
-                        const Icon(Icons.cloud_off_outlined, size: 42),
+                        Icon(
+                          Icons.cloud_off_outlined,
+                          size: 42,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'Program pembinaan belum dapat dimuat.',
@@ -2897,116 +3059,119 @@ class _StatistikScreenState extends State<StatistikScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadStatistik,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-          children: [
-            const SectionIntro(
-              eyebrow: 'RINGKASAN',
-              title: 'Statistik Program',
-              subtitle:
-                  'Ringkasan jumlah WBP berdasarkan tahapan program '
-                  'integrasi dan kegiatan pembinaan di Lapas Banceuy.',
-            ),
-            const SizedBox(height: 22),
-
-            // PROGRAM INTEGRASI
-            if (_loadingIntegrasi)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              )
-            else if (_errorIntegrasi != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.cloud_off_outlined, size: 36),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Statistik integrasi gagal dimuat.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(_errorIntegrasi!, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: _loadStatistikIntegrasi,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              _StatistikDropdown(
-                title: 'Program Integrasi',
-                subtitle: 'Jumlah WBP berdasarkan tahapan program',
-                icon: Icons.account_tree_outlined,
-                items: _buildItemsIntegrasi(),
+      body: SafeArea(
+        bottom: true,
+        child: RefreshIndicator(
+          onRefresh: _loadStatistik,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+            children: [
+              const SectionIntro(
+                eyebrow: 'RINGKASAN',
+                title: 'Statistik Program',
+                subtitle:
+                    'Ringkasan jumlah WBP berdasarkan tahapan program '
+                    'integrasi dan kegiatan pembinaan di Lapas Banceuy.',
               ),
+              const SizedBox(height: 22),
 
-            const SizedBox(height: 16),
-
-            // PROGRAM PEMBINAAN
-            if (_loadingPembinaan)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              )
-            else if (_errorPembinaan != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.cloud_off_outlined, size: 36),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Statistik pembinaan gagal dimuat.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(_errorPembinaan!, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: _loadStatistikPembinaan,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Coba Lagi'),
-                      ),
-                    ],
+              // PROGRAM INTEGRASI
+              if (_loadingIntegrasi)
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
+                )
+              else if (_errorIntegrasi != null)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 36),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Statistik integrasi gagal dimuat.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(_errorIntegrasi!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: _loadStatistikIntegrasi,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                _StatistikDropdown(
+                  title: 'Program Integrasi',
+                  subtitle: 'Jumlah WBP berdasarkan tahapan program',
+                  icon: Icons.account_tree_outlined,
+                  items: _buildItemsIntegrasi(),
                 ),
-              )
-            else
-              _StatistikDropdown(
-                title: 'Program Pembinaan',
-                subtitle: 'Jumlah WBP yang mengikuti setiap program',
-                icon: Icons.diversity_3_outlined,
-                showPercentage: false,
-                items: _buildItemsPembinaan(),
+
+              const SizedBox(height: 16),
+
+              // PROGRAM PEMBINAAN
+              if (_loadingPembinaan)
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              else if (_errorPembinaan != null)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 36),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Statistik pembinaan gagal dimuat.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(_errorPembinaan!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: _loadStatistikPembinaan,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                _StatistikDropdown(
+                  title: 'Program Pembinaan',
+                  subtitle: 'Jumlah WBP yang mengikuti setiap program',
+                  icon: Icons.diversity_3_outlined,
+                  showPercentage: false,
+                  items: _buildItemsPembinaan(),
+                ),
+
+              const SizedBox(height: 18),
+
+              const NoticeCard(
+                icon: Icons.info_outline_rounded,
+                title: 'Informasi Statistik',
+                message:
+                    'Statistik Program Integrasi menampilkan jumlah WBP '
+                    'berdasarkan tahapan terakhir proses integrasi yang tercatat. '
+                    'Sementara itu, Statistik Pembinaan menampilkan jumlah WBP '
+                    'yang mengikuti masing-masing program pembinaan.',
               ),
-
-            const SizedBox(height: 18),
-
-            const NoticeCard(
-              icon: Icons.info_outline_rounded,
-              title: 'Informasi Statistik',
-              message:
-                  'Statistik Program Integrasi menampilkan jumlah WBP '
-                  'berdasarkan tahapan terakhir proses integrasi yang tercatat. '
-                  'Sementara itu, Statistik Pembinaan menampilkan jumlah WBP '
-                  'yang mengikuti masing-masing program pembinaan.',
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -3037,13 +3202,14 @@ class _StatistikDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final total = items.fold<int>(0, (sum, item) => sum + item.jumlah);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE3EAF2)),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Material(
         color: Colors.transparent,
@@ -3056,20 +3222,20 @@ class _StatistikDropdown extends StatelessWidget {
               horizontal: 18,
               vertical: 8,
             ),
-            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 15),
             leading: Container(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF1F8),
+                color: colors.primaryContainer,
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Icon(icon, color: HaloMinnaApp.navy),
+              child: Icon(icon, color: colors.onPrimaryContainer),
             ),
             title: Text(
               title,
-              style: const TextStyle(
-                color: HaloMinnaApp.ink,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: colors.onSurface,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
               ),
@@ -3078,7 +3244,8 @@ class _StatistikDropdown extends StatelessWidget {
               padding: const EdgeInsets.only(top: 5),
               child: Text(
                 subtitle,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF718096)),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.onSurfaceVariant, fontSize: 12),
               ),
             ),
             trailing: const Icon(Icons.keyboard_arrow_down_rounded),
@@ -3087,7 +3254,7 @@ class _StatistikDropdown extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F6FA),
+                  color: colors.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Row(
@@ -3103,10 +3270,10 @@ class _StatistikDropdown extends StatelessWidget {
                     ),
                     Text(
                       '$total WBP',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: HaloMinnaApp.navy,
+                        color: colors.onSurface,
                       ),
                     ),
                   ],
@@ -3121,10 +3288,8 @@ class _StatistikDropdown extends StatelessWidget {
                       Expanded(
                         child: Text(
                           item.title,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: HaloMinnaApp.ink,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colors.onSurface, fontSize: 13),
                         ),
                       ),
                       Container(
@@ -3134,16 +3299,16 @@ class _StatistikDropdown extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAF1F8),
+                          color: colors.primaryContainer,
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: Text(
                           '${item.jumlah}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: HaloMinnaApp.navy,
+                            color: colors.onPrimaryContainer,
                           ),
                         ),
                       ),
@@ -4052,110 +4217,123 @@ class LogoBox extends StatelessWidget {
 
 class SectionIntro extends StatelessWidget {
   final String eyebrow, title, subtitle;
+
   const SectionIntro({
     super.key,
     required this.eyebrow,
     required this.title,
     required this.subtitle,
   });
+
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        eyebrow,
-        style: const TextStyle(
-          color: HaloMinnaApp.blue,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.3,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow,
+          style: TextStyle(
+            color: colors.primary,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.3,
+          ),
         ),
-      ),
-      const SizedBox(height: 7),
-      Text(
-        title,
-        style: const TextStyle(
-          color: HaloMinnaApp.ink,
-          fontSize: 23,
-          height: 1.2,
-          fontWeight: FontWeight.w900,
+        const SizedBox(height: 7),
+        Text(
+          title,
+          style: TextStyle(
+            color: colors.onSurface,
+            fontSize: 23,
+            height: 1.2,
+            fontWeight: FontWeight.w900,
+          ),
         ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        subtitle,
-        style: const TextStyle(
-          color: HaloMinnaApp.muted,
-          fontSize: 13,
-          height: 1.5,
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: colors.onSurfaceVariant,
+            fontSize: 13,
+            height: 1.5,
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class FeatureBanner extends StatelessWidget {
   final IconData icon;
   final String title, body;
+
   const FeatureBanner({
     super.key,
     required this.icon,
     required this.title,
     required this.body,
   });
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(17),
-    decoration: BoxDecoration(
-      color: const Color(0xFFEAF1F8),
-      borderRadius: BorderRadius.circular(17),
-      border: Border.all(color: const Color(0xFFD6E2EF)),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(13),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: colors.primary),
           ),
-          child: Icon(icon, color: HaloMinnaApp.navy),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: HaloMinnaApp.navy,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: colors.onPrimaryContainer,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                body,
-                style: const TextStyle(
-                  color: HaloMinnaApp.ink,
-                  fontSize: 12,
-                  height: 1.45,
+                const SizedBox(height: 5),
+                Text(
+                  body,
+                  style: TextStyle(
+                    color: colors.onPrimaryContainer,
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class ProgramCard extends StatelessWidget {
   final String title, category, description;
   final IconData icon;
+
   const ProgramCard({
     super.key,
     required this.title,
@@ -4163,65 +4341,67 @@ class ProgramCard extends StatelessWidget {
     required this.icon,
     required this.description,
   });
+
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(17),
-      border: Border.all(color: HaloMinnaApp.line),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF1F8),
-            borderRadius: BorderRadius.circular(14),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: colors.onPrimaryContainer, size: 24),
           ),
-          child: Icon(icon, color: HaloMinnaApp.navy, size: 24),
-        ),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: HaloMinnaApp.ink,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontSize: 15, fontWeight: FontWeight.w900),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                category.toUpperCase(),
-                style: const TextStyle(
-                  color: HaloMinnaApp.blue,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .7,
+                const SizedBox(height: 4),
+                Text(
+                  category.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.primary,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 7),
-              Text(
-                description,
-                style: const TextStyle(
-                  color: HaloMinnaApp.muted,
-                  fontSize: 12,
-                  height: 1.45,
+                const SizedBox(height: 7),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class InfoListTile extends StatelessWidget {
@@ -4297,50 +4477,76 @@ class InfoListTile extends StatelessWidget {
 class NoticeCard extends StatelessWidget {
   final IconData icon;
   final String title, message;
+
   const NoticeCard({
     super.key,
     required this.icon,
     required this.title,
     required this.message,
   });
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFF8E8),
-      borderRadius: BorderRadius.circular(15),
-      border: Border.all(color: const Color(0xFFF0E0B8)),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: const Color(0xFF8A681F), size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xFF73551B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final backgroundColor = isDark
+        ? const Color(0xFF332B1B)
+        : const Color(0xFFFFF8E8);
+
+    final borderColor = isDark
+        ? const Color(0xFF65502B)
+        : const Color(0xFFF0E0B8);
+
+    final iconColor = isDark
+        ? const Color(0xFFFFD580)
+        : const Color(0xFF8A681F);
+
+    final titleColor = isDark
+        ? const Color(0xFFFFD580)
+        : const Color(0xFF73551B);
+
+    final messageColor = isDark
+        ? const Color(0xFFE5D5B5)
+        : const Color(0xFF6D5A35);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                message,
-                style: const TextStyle(
-                  color: Color(0xFF6D5A35),
-                  fontSize: 11.5,
-                  height: 1.45,
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: messageColor,
+                    fontSize: 11.5,
+                    height: 1.45,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
