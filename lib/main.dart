@@ -3346,7 +3346,7 @@ Terima kasih.
           const Row(
             children: [
               Icon(Icons.rate_review_outlined, color: HaloMinnaApp.navy),
-              SizedBox(width: 9),
+              SizedBox(width: 5),
               Text(
                 'Kritik & Saran',
                 style: TextStyle(
@@ -3359,14 +3359,14 @@ Terima kasih.
           ),
           const SizedBox(height: 8),
           const Text(
-            'Sampaikan masukan untuk meningkatkan kualitas layanan.',
+            'Sampaikan masukan atau kritik untuk meningkatkan kualitas layanan kami.',
             style: TextStyle(
               color: HaloMinnaApp.muted,
               fontSize: 12,
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           TextFormField(
             controller: _message,
             minLines: 4,
@@ -3403,7 +3403,7 @@ Terima kasih.
         const Row(
           children: [
             Icon(Icons.question_answer_outlined, color: HaloMinnaApp.navy),
-            SizedBox(width: 9),
+            SizedBox(width: 5),
             Text(
               'Tanya Minna',
               style: TextStyle(
@@ -3414,29 +3414,27 @@ Terima kasih.
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 3),
         const Text(
-          'Butuh informasi seputar program integrasi atau layanan '
-          'pemasyarakatan? Sampaikan pertanyaan Anda.',
+          'Ada pertanyaan seputar program integrasi?',
           style: TextStyle(
             color: HaloMinnaApp.muted,
             fontSize: 12,
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 15),
         TextField(
           controller: _pertanyaan,
           minLines: 4,
           maxLines: 7,
           maxLength: 1000,
           decoration: const InputDecoration(
-            labelText: 'Pertanyaan',
             hintText: 'Apa yang ingin Anda tanyakan?',
             alignLabelWithHint: true,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 1),
         FilledButton.icon(
           onPressed: _tanyaMinna,
           icon: const Icon(Icons.chat_rounded),
@@ -3460,7 +3458,7 @@ Terima kasih.
         const SectionIntro(
           eyebrow: 'PUSAT BANTUAN',
           title: 'Ada yang bisa kami bantu?',
-          subtitle: 'Sampaikan masukan atau tanyakan informasi seputar layanan Halo Minna.',
+          subtitle: 'Sampaikan masukan atau tanyakan informasi seputar layanan Integrasi.',
         ),
 
         const SizedBox(height: 22),
@@ -3575,15 +3573,25 @@ class TentangKamiScreen extends StatelessWidget {
           subtitle: 'Halo Minna dirancang sebagai sarana informasi status program integrasi dan kegiatan pembinaan bagi keluarga WBP.',
         ),
         const SizedBox(height: 18),
-        const InfoListTile(
+        InfoListTile(
           icon: Icons.domain_outlined,
           title: 'Profil UPT',
           description: 'Informasi mengenai profil, tugas, dan fungsi Unit Pelaksana Teknis Pemasyarakatan.',
+          onTap: () {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const VisiMisiScreen()));
+          },
         ),
-        const InfoListTile(
+        InfoListTile(
           icon: Icons.phone_android_rounded,
           title: 'Halo Minna',
-          description: 'Layanan informasi digital untuk memudahkan keluarga WBP memperoleh informasi terkait program integrasi dan pembinaan.',
+          description: 'Sarana informasi dan edukasi bagi keluarga WBP untuk memahami program integrasi, tahapan, serta prosedur pemasyarakatan.',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const HaloMinnaInfoScreen()),
+            );
+          },
         ),
         InfoListTile(
           icon: Icons.account_tree_rounded,
@@ -3600,6 +3608,409 @@ class TentangKamiScreen extends StatelessWidget {
       ],
     ),
   );
+}
+
+class VisiMisiScreen extends StatelessWidget {
+  const VisiMisiScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Visi & Misi')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+        children: const [
+          SectionIntro(
+            eyebrow: 'PROFIL PEMASYARAKATAN',
+            title: 'Visi & Misi',
+            subtitle: 'Arah dan tujuan penyelenggaraan pemasyarakatan dalam mewujudkan pelayanan dan pembinaan yang PRIMA.',
+          ),
+          SizedBox(height: 18),
+          VisiMisiSection(),
+        ],
+      ),
+    );
+  }
+}
+
+class HaloMinnaInfoScreen extends StatelessWidget {
+  const HaloMinnaInfoScreen({super.key});
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5EAF0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: HaloMinnaApp.navy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: HaloMinnaApp.muted,
+                    fontSize: 13,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tentang Halo Minna')),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+          children: [
+            const Text(
+              'Informasi yang mudah dipahami',
+              style: TextStyle(
+                color: HaloMinnaApp.navy,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 22),
+
+            // Tujuan Halo Minna
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    HaloMinnaApp.navyDark,
+                    HaloMinnaApp.navy,
+                    HaloMinnaApp.blue,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline_rounded,
+                    color: Color(0xFFF2BD55),
+                    size: 30,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Mengapa Halo Minna Hadir?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Informasi mengenai proses pemasyarakatan perlu '
+                    'dapat dipahami tidak hanya oleh WBP, tetapi juga '
+                    'oleh keluarga. Halo Minna hadir untuk membantu '
+                    'mendekatkan informasi tersebut melalui layanan '
+                    'digital yang lebih mudah diakses dan dipahami.',
+                    style: TextStyle(
+                      color: Color(0xFFD8E5F2),
+                      fontSize: 13,
+                      height: 1.7,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 26),
+
+            const Text(
+              'Tujuan dan Manfaat',
+              style: TextStyle(
+                color: HaloMinnaApp.navy,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            _buildInfoCard(
+              icon: Icons.info_outline_rounded,
+              title: 'Pusat Informasi',
+              description:
+                  'Membantu keluarga memperoleh informasi mengenai '
+                  'status program integrasi dan kegiatan pembinaan WBP.',
+              color: const Color(0xFF2875B8),
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              icon: Icons.school_outlined,
+              title: 'Sarana Edukasi',
+              description:
+                  'Memberikan pemahaman mengenai tahapan, persyaratan, '
+                  'dan prosedur program integrasi agar keluarga '
+                  'lebih memahami proses yang dijalani.',
+              color: const Color(0xFF2E8B65),
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              icon: Icons.family_restroom_rounded,
+              title: 'Pendamping Keluarga',
+              description:
+                  'Membantu keluarga memahami informasi pemasyarakatan '
+                  'sehingga dapat mengikuti proses dan memberikan '
+                  'dukungan yang tepat kepada WBP.',
+              color: const Color(0xFFB47A27),
+            ),
+
+            const SizedBox(height: 26),
+
+            const Text(
+              'Prinsip Layanan',
+              style: TextStyle(
+                color: HaloMinnaApp.navy,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            _buildInfoCard(
+              icon: Icons.info_outline_rounded,
+              title: 'Informatif',
+              description:
+                  'Menyajikan informasi yang relevan dan mudah dipahami.',
+              color: const Color(0xFF2875B8),
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              icon: Icons.menu_book_rounded,
+              title: 'Edukatif',
+              description: 'Mendorong pemahaman keluarga terhadap proses dan prosedur pemasyarakatan.',
+              color: const Color(0xFF2E8B65),
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              icon: Icons.accessibility_new_rounded,
+              title: 'Mudah Diakses',
+              description:
+                  'Menghadirkan akses informasi melalui satu layanan digital.',
+              color: const Color(0xFFB47A27),
+            ),
+
+            const SizedBox(height: 10),
+
+            const SizedBox(height: 2),
+            const Center(
+              child: Text(
+                'Mendekatkan Informasi, Membangun Pemahaman.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: HaloMinnaApp.muted,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class VisiMisiSection extends StatelessWidget {
+  const VisiMisiSection({super.key});
+
+  static const Color _gold = Color(0xFFF2BD55);
+  static const Color _navy = Color(0xFF061A30);
+
+  static const List<String> _misi = [
+    'Melaksanakan pembinaan warga binaan berbasis kompetensi dan kepribadian unggul.',
+    'Memberikan pelayanan dan perlindungan hukum serta HAM yang berkeadilan.',
+    'Mewujudkan pengelolaan anggaran dan kinerja yang akuntabel dan transparan.',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 650;
+
+        final visiCard = _buildVisiCard();
+        final misiCard = _buildMisiCard();
+
+        if (isWide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: visiCard),
+              const SizedBox(width: 16),
+              Expanded(child: misiCard),
+            ],
+          );
+        }
+
+        return Column(
+          children: [visiCard, const SizedBox(height: 16), misiCard],
+        );
+      },
+    );
+  }
+
+  Widget _buildVisiCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [_navy, Color(0xFF123B60)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 9),
+          const Text(
+            'VISI',
+            style: TextStyle(
+              color: _gold,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text.rich(
+            TextSpan(
+              style: const TextStyle(
+                color: _gold,
+                fontSize: 23,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                height: 1.3,
+              ),
+              children: [
+                TextSpan(text: '"Menjadi Penyelenggara Pemasyarakatan yang '),
+                TextSpan(
+                  text: 'PRIMA',
+                  style: TextStyle(color: Colors.white),
+                ),
+                TextSpan(text: '"'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Profesional, Responsif, Integritas, Modern, Akuntabel.',
+            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMisiCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE5EAF0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              SizedBox(width: 12),
+              Text(
+                'Misi',
+                style: TextStyle(
+                  color: _navy,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          ..._misi.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF2E8B65),
+                    size: 21,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: Color(0xFF263648),
+                        fontSize: 14,
+                        height: 1.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class InstitutionLogos extends StatelessWidget {
