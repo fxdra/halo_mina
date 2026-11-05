@@ -980,21 +980,6 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
         Icons.groups_outlined,
       ),
       TimelineData(
-        'Input SDP',
-        _tanggal(integrasi['tgl_input_sdp']),
-        Icons.edit_calendar_outlined,
-      ),
-      TimelineData(
-        'Verifikasi Ditjen',
-        _tanggal(integrasi['tgl_verifikasi_ditjen']),
-        Icons.verified_outlined,
-      ),
-      TimelineData(
-        'Persetujuan Menteri',
-        _tanggal(integrasi['tgl_persetujuan_menteri']),
-        Icons.gavel_outlined,
-      ),
-      TimelineData(
         'Otorisasi SK',
         _tanggal(integrasi['tgl_otorisasi_sk']),
         Icons.approval_outlined,
@@ -1060,7 +1045,7 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 17),
+          const SizedBox(height: 10),
           ...List.generate(
             steps.length,
             (i) => TimelineRow(
@@ -1069,11 +1054,11 @@ class _StatusProgramScreenState extends State<StatusProgramScreen> {
               index: i,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 3),
           const NoticeCard(
             icon: Icons.info_outline_rounded,
             title: 'Catatan',
-            message: 'Tahapan tanpa tanggal bukan berarti Program Integrasi gagal. Status dan tanggal aktual mengikuti data yang tersedia dari sistem.',
+            message: 'Status dan tanggal aktual mengikuti data yang tersedia dari sistem.',
           ),
         ],
       ),
@@ -2337,9 +2322,9 @@ class _ProgramPembinaanScreenState extends State<ProgramPembinaanScreen> {
             ),
             const SizedBox(height: 20),
             const FeatureBanner(
-              icon: Icons.diversity_3_outlined,
-              title: 'Pembinaan dan pengembangan diri',
-              body: 'Informasi program ditampilkan berdasarkan catatan pembinaan WBP yang tercatat di sistem.',
+              icon: Icons.school_outlined,
+              title: 'Kewajiban Mengikuti Program Pembinaan',
+              body: 'Setiap WBP wajib mengikuti program pembinaan yang tersedia di Lembaga Pemasyarakatan Banceuy.',
             ),
             const SizedBox(height: 22),
             FutureBuilder<Map<String, dynamic>>(
@@ -3231,11 +3216,34 @@ class _KritikSaranScreenState extends State<KritikSaranScreen> {
   final _message = TextEditingController();
   final _pertanyaan = TextEditingController();
 
-  String _type = 'Saran';
+  final _type = 'Saran';
+
+  String _activeFeature = 'Kritik & Saran';
+  String _namaWbp = '';
 
   // GANTI dengan nomor WhatsApp Admin Bimkemaswat.
   // Format: kode negara + nomor, tanpa tanda +.
   static const String _adminWhatsApp = '6282128000497';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilWbp();
+  }
+
+  Future<void> _loadProfilWbp() async {
+    try {
+      final profil = await HaloMinnaApi.getProfil();
+
+      if (!mounted) return;
+
+      setState(() {
+        _namaWbp = profil['nama']?.toString().trim() ?? '';
+      });
+    } catch (e) {
+      debugPrint('Gagal mengambil profil WBP: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -3285,11 +3293,13 @@ class _KritikSaranScreenState extends State<KritikSaranScreen> {
   Future<void> _kirimKritikSaran() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final nama = _namaWbp.isNotEmpty ? _namaWbp : 'WBP';
+
     final pesan =
         '''
 Assalamu'alaikum Admin Bimkemaswat.
 
-Saya ingin menyampaikan $_type melalui aplikasi Halo Minna.
+Saya keluarga dari wbp atas nama $nama ingin menyampaikan $_type melalui aplikasi Halo Minna.
 
 Pesan:
 ${_message.text.trim()}
@@ -3310,13 +3320,14 @@ Terima kasih.
       return;
     }
 
+    final nama = _namaWbp.isNotEmpty ? _namaWbp : 'WBP';
+
     final pesan =
         '''
 Assalamu'alaikum Admin Bimkemaswat.
 
-Saya ingin bertanya melalui aplikasi Halo Minna.
+Saya keluarga dari wbp atas nama $nama ingin bertanya
 
-Pertanyaan:
 $pertanyaan
 
 Terima kasih.
@@ -3325,172 +3336,187 @@ Terima kasih.
     await _bukaWhatsApp(pesan);
   }
 
+  Widget _buildKritikSaranForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        key: const ValueKey('kritik_saran'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.rate_review_outlined, color: HaloMinnaApp.navy),
+              SizedBox(width: 9),
+              Text(
+                'Kritik & Saran',
+                style: TextStyle(
+                  color: HaloMinnaApp.ink,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Sampaikan masukan untuk meningkatkan kualitas layanan.',
+            style: TextStyle(
+              color: HaloMinnaApp.muted,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 18),
+          TextFormField(
+            controller: _message,
+            minLines: 4,
+            maxLines: 7,
+            maxLength: 1000,
+            decoration: const InputDecoration(
+              labelText: 'Pesan',
+              hintText: 'Tulis kritik atau saran...',
+              alignLabelWithHint: true,
+            ),
+            validator: (v) =>
+                v == null || v.trim().isEmpty ? 'Pesan belum diisi.' : null,
+          ),
+          const SizedBox(height: 1),
+          FilledButton.icon(
+            onPressed: _kirimKritikSaran,
+            icon: const Icon(Icons.chat_rounded),
+            label: const Text('Lanjutkan ke WhatsApp'),
+            style: FilledButton.styleFrom(
+              backgroundColor: HaloMinnaApp.navy,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTanyaMinnaForm() {
+    return Column(
+      key: const ValueKey('tanya_minna'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.question_answer_outlined, color: HaloMinnaApp.navy),
+            SizedBox(width: 9),
+            Text(
+              'Tanya Minna',
+              style: TextStyle(
+                color: HaloMinnaApp.ink,
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Butuh informasi seputar program integrasi atau layanan '
+          'pemasyarakatan? Sampaikan pertanyaan Anda.',
+          style: TextStyle(
+            color: HaloMinnaApp.muted,
+            fontSize: 12,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 18),
+        TextField(
+          controller: _pertanyaan,
+          minLines: 4,
+          maxLines: 7,
+          maxLength: 1000,
+          decoration: const InputDecoration(
+            labelText: 'Pertanyaan',
+            hintText: 'Apa yang ingin Anda tanyakan?',
+            alignLabelWithHint: true,
+          ),
+        ),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+          onPressed: _tanyaMinna,
+          icon: const Icon(Icons.chat_rounded),
+          label: const Text('Tanyakan ke Admin'),
+          style: FilledButton.styleFrom(
+            backgroundColor: HaloMinnaApp.navy,
+            padding: const EdgeInsets.symmetric(vertical: 15),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Pusat Bantuan')),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         const SectionIntro(
           eyebrow: 'PUSAT BANTUAN',
           title: 'Ada yang bisa kami bantu?',
           subtitle: 'Sampaikan masukan atau tanyakan informasi seputar layanan Halo Minna.',
         ),
-        const SizedBox(height: 20),
-        const SizedBox(height: 18),
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: HaloMinnaApp.line),
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.message_outlined, color: HaloMinnaApp.navy),
-                    SizedBox(width: 9),
-                    Text(
-                      'Kritik & Saran',
-                      style: TextStyle(
-                        color: HaloMinnaApp.ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Sampaikan masukan untuk meningkatkan kualitas layanan.',
-                  style: TextStyle(
-                    color: HaloMinnaApp.muted,
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Jenis masukan',
-                  style: TextStyle(
-                    color: HaloMinnaApp.ink,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 9),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                      value: 'Kritik',
-                      label: Text('Kritik'),
-                      icon: Icon(Icons.report_outlined),
-                    ),
-                    ButtonSegment(
-                      value: 'Saran',
-                      label: Text('Saran'),
-                      icon: Icon(Icons.lightbulb_outline),
-                    ),
-                  ],
-                  selected: {_type},
-                  onSelectionChanged: (v) {
-                    setState(() => _type = v.first);
-                  },
-                ),
-                const SizedBox(height: 18),
-                TextFormField(
-                  controller: _message,
-                  minLines: 4,
-                  maxLines: 7,
-                  maxLength: 1000,
-                  decoration: const InputDecoration(
-                    labelText: 'Pesan',
-                    hintText: 'Tulis kritik atau saran...',
-                    alignLabelWithHint: true,
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty
-                      ? 'Pesan belum diisi.'
-                      : null,
-                ),
-                const SizedBox(height: 8),
-                FilledButton.icon(
-                  onPressed: _kirimKritikSaran,
-                  icon: const Icon(Icons.chat_rounded),
-                  label: const Text('Lanjutkan ke WhatsApp'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: HaloMinnaApp.navy,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                ),
-              ],
+
+        const SizedBox(height: 22),
+        SegmentedButton<String>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(
+              value: 'Kritik & Saran',
+              label: Text('Kritik & Saran'),
+              icon: Icon(Icons.rate_review_outlined),
             ),
-          ),
+            ButtonSegment(
+              value: 'Tanya Minna',
+              label: Text('Tanya Minna'),
+              icon: Icon(Icons.question_answer_outlined),
+            ),
+          ],
+          selected: {_activeFeature},
+          onSelectionChanged: (value) {
+            FocusScope.of(context).unfocus();
+            _formKey.currentState?.reset();
+            setState(() {
+              _activeFeature = value.first;
+            });
+          },
         ),
 
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: HaloMinnaApp.line),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.question_answer_outlined,
-                    color: HaloMinnaApp.navy,
-                  ),
-                  SizedBox(width: 9),
-                  Text(
-                    'Tanya Minna',
-                    style: TextStyle(
-                      color: HaloMinnaApp.ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.03, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Butuh informasi seputar program integrasi atau layanan pemasyarakatan? Sampaikan pertanyaan Anda.',
-                style: TextStyle(
-                  color: HaloMinnaApp.muted,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: _pertanyaan,
-                minLines: 3,
-                maxLines: 5,
-                maxLength: 1000,
-                decoration: const InputDecoration(
-                  labelText: 'Pertanyaan',
-                  hintText: 'Apa yang ingin Anda tanyakan?',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                onPressed: _tanyaMinna,
-                icon: const Icon(Icons.chat_rounded),
-                label: const Text('Tanyakan ke Admin'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: HaloMinnaApp.navy,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-              ),
-            ],
+            );
+          },
+          child: Container(
+            key: ValueKey(_activeFeature),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: HaloMinnaApp.line),
+            ),
+            child: _activeFeature == 'Kritik & Saran'
+                ? _buildKritikSaranForm()
+                : _buildTanyaMinnaForm(),
           ),
         ),
       ],
