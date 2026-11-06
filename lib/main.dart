@@ -190,6 +190,26 @@ class _AccessScreenState extends State<AccessScreen> {
           const Text('HALO MINNA'),
         ],
       ),
+      actions: [
+        IconButton(
+          tooltip: Theme.of(context).brightness == Brightness.dark
+              ? 'Aktifkan Light Mode'
+              : 'Aktifkan Dark Mode',
+          onPressed: () {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+
+            themeManager.setThemeMode(
+              isDark ? ThemeMode.light : ThemeMode.dark,
+            );
+          },
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark
+                ? Icons.light_mode_outlined
+                : Icons.dark_mode_outlined,
+          ),
+        ),
+        const SizedBox(width: 8),
+      ],
     ),
     body: SafeArea(
       child: SingleChildScrollView(
@@ -422,46 +442,10 @@ class _AccessScreenState extends State<AccessScreen> {
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
-  Future<void> _showThemeDialog(BuildContext context) async {
-    final selectedMode = await showDialog<ThemeMode>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('Pengaturan Tampilan'),
-        children: [
-          RadioGroup<ThemeMode>(
-            groupValue: themeManager.themeMode,
-            onChanged: (mode) {
-              if (mode != null) {
-                Navigator.pop(dialogContext, mode);
-              }
-            },
-            child: Column(
-              children: const [
-                RadioListTile<ThemeMode>(
-                  value: ThemeMode.system,
-                  title: Text('System Default'),
-                  subtitle: Text('Mengikuti tema perangkat'),
-                ),
-                RadioListTile<ThemeMode>(
-                  value: ThemeMode.light,
-                  title: Text('Light Mode'),
-                  subtitle: Text('Tampilan terang'),
-                ),
-                RadioListTile<ThemeMode>(
-                  value: ThemeMode.dark,
-                  title: Text('Dark Mode'),
-                  subtitle: Text('Tampilan gelap'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  void _showThemeDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (selectedMode != null) {
-      await themeManager.setThemeMode(selectedMode);
-    }
+    themeManager.setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -1439,24 +1423,6 @@ class _AlurProgramIntegrasiScreenState
                   'Pelajari tahapan pengusulan hingga penerbitan SK.',
                   style: TextStyle(
                     color: colors.onSurfaceVariant,
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tahapan Pengusulan',
-                  style: TextStyle(
-                    color: HaloMinnaApp.navy,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Pelajari tahapan pengusulan hingga penerbitan SK.',
-                  style: TextStyle(
-                    color: HaloMinnaApp.muted,
                     fontSize: 13,
                     height: 1.5,
                   ),
@@ -3502,20 +3468,21 @@ Terima kasih.
   }
 
   Widget _buildKritikSaranForm() {
+    final colors = Theme.of(context).colorScheme;
     return Form(
       key: _formKey,
       child: Column(
         key: const ValueKey('kritik_saran'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.rate_review_outlined, color: HaloMinnaApp.navy),
-              SizedBox(width: 5),
+              Icon(Icons.rate_review_outlined, color: colors.primary),
+              const SizedBox(width: 5),
               Text(
                 'Kritik & Saran',
-                style: TextStyle(
-                  color: HaloMinnaApp.ink,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.onSurface,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -3523,10 +3490,10 @@ Terima kasih.
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Sampaikan masukan atau kritik untuk meningkatkan kualitas layanan kami.',
-            style: TextStyle(
-              color: HaloMinnaApp.muted,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
               fontSize: 12,
               height: 1.5,
             ),
@@ -3551,7 +3518,8 @@ Terima kasih.
             icon: const Icon(Icons.chat_rounded),
             label: const Text('Lanjutkan ke WhatsApp'),
             style: FilledButton.styleFrom(
-              backgroundColor: HaloMinnaApp.navy,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 15),
             ),
           ),
@@ -3561,18 +3529,20 @@ Terima kasih.
   }
 
   Widget _buildTanyaMinnaForm() {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       key: const ValueKey('tanya_minna'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.question_answer_outlined, color: HaloMinnaApp.navy),
-            SizedBox(width: 5),
+            Icon(Icons.question_answer_outlined, color: colors.primary),
+            const SizedBox(width: 5),
             Text(
               'Tanya Minna',
-              style: TextStyle(
-                color: HaloMinnaApp.ink,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: colors.onSurface,
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
               ),
@@ -3580,10 +3550,10 @@ Terima kasih.
           ],
         ),
         const SizedBox(height: 3),
-        const Text(
+        Text(
           'Ada pertanyaan seputar program integrasi?',
-          style: TextStyle(
-            color: HaloMinnaApp.muted,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: colors.onSurfaceVariant,
             fontSize: 12,
             height: 1.5,
           ),
@@ -3605,7 +3575,8 @@ Terima kasih.
           icon: const Icon(Icons.chat_rounded),
           label: const Text('Tanyakan ke Admin'),
           style: FilledButton.styleFrom(
-            backgroundColor: HaloMinnaApp.navy,
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 15),
           ),
         ),
@@ -3673,9 +3644,11 @@ Terima kasih.
             key: ValueKey(_activeFeature),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: HaloMinnaApp.line),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: _activeFeature == 'Kritik & Saran'
                 ? _buildKritikSaranForm()
@@ -3801,18 +3774,21 @@ class VisiMisiScreen extends StatelessWidget {
 class HaloMinnaInfoScreen extends StatelessWidget {
   const HaloMinnaInfoScreen({super.key});
 
-  Widget _buildInfoCard({
+  Widget _buildInfoCard(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String description,
     required Color color,
   }) {
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5EAF0)),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3833,8 +3809,8 @@ class HaloMinnaInfoScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: HaloMinnaApp.navy,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colors.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                   ),
@@ -3842,8 +3818,8 @@ class HaloMinnaInfoScreen extends StatelessWidget {
                 const SizedBox(height: 7),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: HaloMinnaApp.muted,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
                     fontSize: 13,
                     height: 1.6,
                   ),
@@ -3864,10 +3840,10 @@ class HaloMinnaInfoScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
           children: [
-            const Text(
+            Text(
               'Informasi yang mudah dipahami',
-              style: TextStyle(
-                color: HaloMinnaApp.navy,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 height: 1.3,
@@ -3926,10 +3902,10 @@ class HaloMinnaInfoScreen extends StatelessWidget {
 
             const SizedBox(height: 26),
 
-            const Text(
+            Text(
               'Tujuan dan Manfaat',
-              style: TextStyle(
-                color: HaloMinnaApp.navy,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
@@ -3937,6 +3913,7 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 14),
 
             _buildInfoCard(
+              context,
               icon: Icons.info_outline_rounded,
               title: 'Pusat Informasi',
               description:
@@ -3947,6 +3924,7 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 12),
 
             _buildInfoCard(
+              context,
               icon: Icons.school_outlined,
               title: 'Sarana Edukasi',
               description:
@@ -3958,6 +3936,7 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 12),
 
             _buildInfoCard(
+              context,
               icon: Icons.family_restroom_rounded,
               title: 'Pendamping Keluarga',
               description:
@@ -3969,10 +3948,10 @@ class HaloMinnaInfoScreen extends StatelessWidget {
 
             const SizedBox(height: 26),
 
-            const Text(
+            Text(
               'Prinsip Layanan',
-              style: TextStyle(
-                color: HaloMinnaApp.navy,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
@@ -3980,6 +3959,7 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 14),
 
             _buildInfoCard(
+              context,
               icon: Icons.info_outline_rounded,
               title: 'Informatif',
               description:
@@ -3989,6 +3969,7 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 12),
 
             _buildInfoCard(
+              context,
               icon: Icons.menu_book_rounded,
               title: 'Edukatif',
               description: 'Mendorong pemahaman keluarga terhadap proses dan prosedur pemasyarakatan.',
@@ -3997,6 +3978,7 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 12),
 
             _buildInfoCard(
+              context,
               icon: Icons.accessibility_new_rounded,
               title: 'Mudah Diakses',
               description:
@@ -4007,12 +3989,12 @@ class HaloMinnaInfoScreen extends StatelessWidget {
             const SizedBox(height: 10),
 
             const SizedBox(height: 2),
-            const Center(
+            Center(
               child: Text(
                 'Mendekatkan Informasi, Membangun Pemahaman.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: HaloMinnaApp.muted,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
                 ),
@@ -4044,7 +4026,7 @@ class VisiMisiSection extends StatelessWidget {
         final isWide = constraints.maxWidth >= 650;
 
         final visiCard = _buildVisiCard();
-        final misiCard = _buildMisiCard();
+        final misiCard = _buildMisiCard(context);
 
         if (isWide) {
           return Row(
@@ -4119,25 +4101,26 @@ class VisiMisiSection extends StatelessWidget {
     );
   }
 
-  Widget _buildMisiCard() {
+  Widget _buildMisiCard(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5EAF0)),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Text(
                 'Misi',
-                style: TextStyle(
-                  color: _navy,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.onSurface,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1,
@@ -4161,8 +4144,8 @@ class VisiMisiSection extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item,
-                      style: const TextStyle(
-                        color: Color(0xFF263648),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurface,
                         fontSize: 14,
                         height: 1.6,
                       ),
@@ -4418,60 +4401,64 @@ class InfoListTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(15),
-      border: Border.all(color: HaloMinnaApp.line),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: onTap,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.circular(15),
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Row(
-            children: [
-              Icon(icon, color: HaloMinnaApp.blue, size: 22),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: HaloMinnaApp.ink,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Row(
+              children: [
+                Icon(icon, color: colors.primary, size: 22),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: colors.onSurface,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: HaloMinnaApp.muted,
-                        fontSize: 12,
-                        height: 1.4,
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (onTap != null)
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: HaloMinnaApp.muted,
-                ),
-            ],
+                if (onTap != null)
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.onSurfaceVariant,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class NoticeCard extends StatelessWidget {
