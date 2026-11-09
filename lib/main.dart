@@ -123,6 +123,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
 class AccessScreen extends StatefulWidget {
   const AccessScreen({super.key});
+
   @override
   State<AccessScreen> createState() => _AccessScreenState();
 }
@@ -130,8 +131,10 @@ class AccessScreen extends StatefulWidget {
 class _AccessScreenState extends State<AccessScreen> {
   final _controller = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
   bool _showCode = true;
   bool _loading = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -158,7 +161,15 @@ class _AccessScreenState extends State<AccessScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final error = e.toString();
+
+      final message =
+          error.contains('Failed to fetch') ||
+              error.contains('SocketException') ||
+              error.contains('ClientException')
+          ? 'Tidak dapat terhubung ke layanan Halo Minna. '
+                'Periksa koneksi internet Anda, kemudian coba kembali.'
+          : error.replaceFirst('Exception: ', '');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -172,6 +183,80 @@ class _AccessScreenState extends State<AccessScreen> {
         setState(() => _loading = false);
       }
     }
+  }
+
+  Future<void> _contactMinna() async {
+    const phoneNumber = '6282128000497';
+
+    const message =
+        'Halo Minna, saya membutuhkan bantuan terkait akses Halo Minna.';
+
+    final uri = Uri.parse(
+      'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}',
+    );
+
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Tidak dapat membuka WhatsApp. Silakan coba kembali.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak dapat membuka WhatsApp. Silakan coba kembali.'),
+        ),
+      );
+    }
+  }
+
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.support_agent_rounded, color: Color(0xFF25A366)),
+            SizedBox(width: 10),
+            Text('Butuh Bantuan?'),
+          ],
+        ),
+        content: const Text(
+          'Hubungi Admin Bimkemaswat melalui WhatsApp '
+          'jika mengalami kendala akses atau membutuhkan informasi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Tutup'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _contactMinna();
+            },
+            icon: const Icon(Icons.chat_rounded),
+            label: const Text('Hubungi WhatsApp'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF25A366),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -212,228 +297,285 @@ class _AccessScreenState extends State<AccessScreen> {
       ],
     ),
     body: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 30),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final horizontalPadding = constraints.maxWidth >= 600 ? 32.0 : 22.0;
+
+          return Stack(
             children: [
-              const InstitutionLogos(size: 76),
-              const SizedBox(height: 26),
-              Text(
-                'Informasi Integrasi\nWarga Binaan',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 26,
-                  height: 1.2,
-                  fontWeight: FontWeight.w900,
+              SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  22,
+                  horizontalPadding,
+                  30,
                 ),
-              ),
-              Text(
-                'Pantau informasi program integrasi melalui satu akses yang mudah dan resmi.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 30),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                  boxShadow: [
-                    if (Theme.of(context).brightness == Brightness.light)
-                      const BoxShadow(
-                        color: Color(0x090B2D50),
-                        blurRadius: 24,
-                        offset: Offset(0, 8),
-                      ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lock_outline_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 9),
-                        Text(
-                          'Masuk dengan Kode Akses',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Gunakan kode akses yang diberikan oleh petugas.',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 12.5,
-                        height: 1.45,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 56,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
-                            border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .outlineVariant,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'BNCY-',
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const InstitutionLogos(size: 76),
+                          const SizedBox(height: 26),
+                          Text(
+                            'Informasi Integrasi\nWarga Binaan',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 26,
+                              height: 1.2,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            'Pantau informasi program integrasi melalui satu akses yang mudah dan resmi.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme
-                                  .onPrimaryContainer,
-                              fontSize: 15,
-                              letterSpacing: 0.5,
+                                  .onSurfaceVariant,
+                              height: 1.5,
+                              fontSize: 14,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _controller,
-                            textCapitalization: TextCapitalization.characters,
-                            autocorrect: false,
-                            maxLength: 8,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _continue(),
-                            obscureText: !_showCode,
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Kode akses wajib diisi.'
-                                : v.trim().length != 8
-                                ? 'Kode akses harus terdiri dari 8 karakter.'
-                                : null,
-                            decoration: InputDecoration(
-                              labelText: 'Kode Akses',
-                              hintText: 'XXXXXXXX',
-                              prefixIcon: const Icon(Icons.key_rounded),
-                              counterText: '',
-                              suffixIcon: IconButton(
-                                tooltip: _showCode
-                                    ? 'Sembunyikan kode'
-                                    : 'Tampilkan kode',
-                                onPressed: () =>
-                                    setState(() => _showCode = !_showCode),
-                                icon: Icon(
-                                  _showCode
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                ),
+                          const SizedBox(height: 30),
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant,
                               ),
+                              boxShadow: [
+                                if (Theme.of(context).brightness ==
+                                    Brightness.light)
+                                  const BoxShadow(
+                                    color: Color(0x090B2D50),
+                                    blurRadius: 24,
+                                    offset: Offset(0, 8),
+                                  ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.lock_outline_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
+                                    const SizedBox(width: 9),
+                                    Text(
+                                      'Masuk dengan Kode Akses',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Gunakan kode akses yang diberikan oleh petugas.',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    fontSize: 12.5,
+                                    height: 1.45,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      height: 56,
+                                      alignment: Alignment.center,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer,
+                                        border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outlineVariant,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'BNCY-',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                          fontSize: 15,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _controller,
+                                        textCapitalization:
+                                            TextCapitalization.characters,
+                                        autocorrect: false,
+                                        maxLength: 8,
+                                        textInputAction: TextInputAction.done,
+                                        onFieldSubmitted: (_) => _continue(),
+                                        obscureText: !_showCode,
+                                        validator: (v) =>
+                                            v == null || v.trim().isEmpty
+                                            ? 'Kode akses wajib diisi.'
+                                            : v.trim().length != 8
+                                            ? 'Kode akses harus terdiri dari 8 karakter.'
+                                            : null,
+                                        decoration: InputDecoration(
+                                          labelText: 'Kode Akses',
+                                          hintText: 'XXXXXXXX',
+                                          prefixIcon: const Icon(
+                                            Icons.key_rounded,
+                                          ),
+                                          counterText: '',
+                                          suffixIcon: IconButton(
+                                            tooltip: _showCode
+                                                ? 'Sembunyikan kode'
+                                                : 'Tampilkan kode',
+                                            onPressed: () => setState(
+                                              () => _showCode = !_showCode,
+                                            ),
+                                            icon: Icon(
+                                              _showCode
+                                                  ? Icons
+                                                        .visibility_off_outlined
+                                                  : Icons.visibility_outlined,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  height: 52,
+                                  child: FilledButton.icon(
+                                    onPressed: _loading ? null : _continue,
+                                    icon: _loading
+                                        ? SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimary,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.arrow_forward_rounded,
+                                            size: 19,
+                                          ),
+                                    label: Text(
+                                      _loading ? 'Memeriksa...' : 'LANJUTKAN',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: .4,
+                                      ),
+                                    ),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      foregroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      height: 52,
-                      child: FilledButton.icon(
-                        onPressed: _loading ? null : _continue,
-                        icon: _loading
-                            ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimary,
-                                ),
-                              )
-                            : const Icon(Icons.arrow_forward_rounded, size: 19),
-                        label: Text(
-                          _loading ? 'Memeriksa...' : 'LANJUTKAN',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: .4,
+                          const SizedBox(height: 15),
+                          const NoticeCard(
+                            icon: Icons.shield_outlined,
+                            title: 'Akses informasi yang aman',
+                            message: 'Jaga kerahasiaan kode akses. Jangan membagikannya kepada orang lain.',
                           ),
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primary,
-                          foregroundColor: Theme.of(context)
-                              .colorScheme
-                              .onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+
+                          const SizedBox(height: 15),
+                          Text(
+                            'LAYANAN INFORMASI',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              fontSize: 10,
+                              letterSpacing: 1.5,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 62,
+                            child: Image.asset(
+                              'assets/images/logo_upt.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Lapas Banceuy Bandung',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 15),
-              const NoticeCard(
-                icon: Icons.shield_outlined,
-                title: 'Akses informasi yang aman',
-                message: 'Jaga kerahasiaan kode akses. Jangan membagikannya kepada orang lain.',
               ),
 
-              const SizedBox(height: 15),
-              Text(
-                'LAYANAN INFORMASI',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 62,
-                child: Image.asset(
-                  'assets/images/logo_upt.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Lapas Banceuy Bandung',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+              Positioned(
+                right: 20,
+                bottom: 20,
+                child: FloatingActionButton(
+                  heroTag: 'helpMinna',
+                  backgroundColor: const Color(0xFF25A366),
+                  foregroundColor: Colors.white,
+                  tooltip: 'Hubungi Minna',
+                  onPressed: _showHelpDialog,
+                  child: const Icon(Icons.support_agent_rounded),
                 ),
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     ),
   );
@@ -723,19 +865,32 @@ class DashboardScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 17),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: menus.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+
+                      final crossAxisCount = width >= 850
+                          ? 4
+                          : width >= 560
+                          ? 3
+                          : 2;
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: menus.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: .91,
+                          childAspectRatio: width >= 560 ? 1.0 : .91,
                         ),
-                    itemBuilder: (ctx, i) =>
-                        MenuCard(menu: menus[i], onTap: () => _open(ctx, i)),
+                        itemBuilder: (ctx, i) => MenuCard(
+                          menu: menus[i],
+                          onTap: () => _open(ctx, i),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 22),
