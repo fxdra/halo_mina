@@ -47,3 +47,8 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 .vscode/settings.json
+
+# Android Studio / IntelliJ
+/android/key.properties
+/android/app/upload-keystore.jks
+/android/build/
